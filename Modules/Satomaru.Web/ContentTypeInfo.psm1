@@ -15,7 +15,7 @@ class ContentTypeInfo {
     [string[]] $Elements
     [hashtable] $Attributes
     [string] $Charset
-    [System.Boolean] $AsText
+    [boolean] $AsText
     [string[]] $Extentions
 
     ContentTypeInfo([string] $ContentType) {
