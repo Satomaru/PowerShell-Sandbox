@@ -3,9 +3,9 @@ function prompt {
 }
 
 function importAll {
-    Import-Module -Name Satomaru.Util -Force -verbose
-    Import-Module -Name Satomaru.Web -Force -verbose
+    Import-Module -Name Satomaru.Util -Force -Verbose
+    Import-Module -Name Satomaru.Web -Force -Verbose
 }
 
-Set-Location \Users\eryne\OneDrive\ドキュメント\PowerShell
+Set-Location ~\OneDrive\ドキュメント\PowerShell
 Get-Location
