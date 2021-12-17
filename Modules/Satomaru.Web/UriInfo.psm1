@@ -9,6 +9,7 @@
         $this.FileName = [System.IO.Path]::GetFileName($Uri.LocalPath)
         $this.BaseName = [System.IO.Path]::GetFileNameWithoutExtension($Uri.LocalPath)
         $this.Extension = [System.IO.Path]::GetExtension($Uri.LocalPath)
+        $this.Extension = $this.Extension.StartsWith(".") ? $this.Extension.Substring(1) : $this.Extension
     }
 
     [string] GetFileNameOrAlter([string] $BaseNameWhenEmpty, [string[]] $Extensions) {
