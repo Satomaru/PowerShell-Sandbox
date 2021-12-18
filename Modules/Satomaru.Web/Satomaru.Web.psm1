@@ -36,7 +36,9 @@ function Save-WebResponse {
             [UriInfo]::new($Info.RequestUri).GetFileNameOrAlter("response<n>", $ContentTypeInfo.Extentions)
         }
 
-        $Info.FileName = $Info.FileName.Replace("<n>", $Index++)
+        if ($Info.FileName.Contains("<n>")) {
+            $Info.FileName = $Info.FileName.Replace("<n>", $Index++)
+        }
 
         if ($Info.AsText) {
             $Response.Content `
