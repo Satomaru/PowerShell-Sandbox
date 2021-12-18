@@ -29,7 +29,13 @@ function Save-WebResponse {
         [ContentTypeInfo] $ContentTypeInfo = [ContentTypeInfo]::new($Info.ContentType)
         $Info.AsText = $ContentTypeInfo.AsText
         $Info.Charset = $ContentTypeInfo.Charset
-        $Info.FileName = ($FileName -ne "") ? $FileName : [UriInfo]::new($Info.RequestUri).GetFileNameOrAlter("response", $ContentTypeInfo.Extentions)
+
+        $Info.FileName = if ($FileName -ne "") {
+            $FileName
+        } else {
+            [UriInfo]::new($Info.RequestUri).GetFileNameOrAlter("response<n>", $ContentTypeInfo.Extentions)
+        }
+
         $Info.FileName = $Info.FileName.Replace("<n>", $Index++)
 
         if ($Info.AsText) {
