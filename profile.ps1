@@ -3,8 +3,9 @@ function prompt {
 }
 
 function importAll {
-    Import-Module -Name Satomaru.Util -Force -Verbose
-    Import-Module -Name Satomaru.Web -Force -Verbose
+    Get-ChildItem -Path ~\OneDrive\ドキュメント\PowerShell\Modules | ForEach-Object {
+        Import-Module -Name $_.Name -Force -Verbose
+    }
 }
 
 Set-Location ~\OneDrive\ドキュメント\PowerShell

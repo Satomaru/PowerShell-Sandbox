@@ -1,10 +1,13 @@
-﻿Import-Module -Name Satomaru.Util
+﻿#Requires -Version 7
+using namespace Microsoft.PowerShell.Commands
+
+Import-Module -Name Satomaru.Util
 
 $Script:Specs = @{
     "*/*"                          = @{ AsText = $false; Extensions = @("dat", "*");                  Charset = "ISO-8859-1" }
     "application/gzip"             = @{ AsText = $false; Extensions = @("gz");                        Charset = "ISO-8859-1" }
     "application/java-archiver"    = @{ AsText = $false; Extensions = @("jar");                       Charset = "ISO-8859-1" }
-    "application/json"             = @{ AsText = $true;  Extensions = @("json");                      Charset = "ISO-8859-1" }
+    "application/json"             = @{ AsText = $true;  Extensions = @("json");                      Charset = "UTF-8" }
     "application/octet-stream"     = @{ AsText = $false; Extensions = @("dat", "*");                  Charset = "ISO-8859-1" }
     "application/pdf"              = @{ AsText = $false; Extensions = @("pdf");                       Charset = "ISO-8859-1" }
     "application/zip"              = @{ AsText = $false; Extensions = @("zip");                       Charset = "ISO-8859-1" }
@@ -77,7 +80,10 @@ class UriInfo {
         $this.FileName = [System.IO.Path]::GetFileName($Uri.LocalPath)
         $this.BaseName = [System.IO.Path]::GetFileNameWithoutExtension($Uri.LocalPath)
         $this.Extension = [System.IO.Path]::GetExtension($Uri.LocalPath)
-        $this.Extension = $this.Extension.StartsWith(".") ? $this.Extension.Substring(1) : $this.Extension
+
+        if ($this.Extension.StartsWith(".")) {
+            $this.Extension = $this.Extension.Substring(1)
+        }
     }
 
     [string] GetFileNameOrAlter([string] $BaseNameWhenEmpty, [ContentTypeInfo] $ContentTypeInfo) {
@@ -101,7 +107,7 @@ class SaveInfo {
 function Save-WebResponse {
     [OutputType([object])]
     Param(
-        [Parameter(Mandatory, ValueFromPipeline)] [Microsoft.PowerShell.Commands.BasicHtmlWebResponseObject] $Response,
+        [Parameter(Mandatory, ValueFromPipeline)] [BasicHtmlWebResponseObject] $Response,
         [string] $FileName
     )
 

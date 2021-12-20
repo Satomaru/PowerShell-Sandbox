@@ -1,3 +1,6 @@
+#Requires -Version 7
+using namespace Microsoft.PowerShell.Commands
+
 function ConvertTo-Unquote {
     [OutputType([string])]
     Param(
@@ -5,12 +8,12 @@ function ConvertTo-Unquote {
     )
 
     Process {
-        [string] $Trimmed = $Target.Trim()
+        $Target = $Target.Trim()
 
-        if ($Trimmed -match "^""(.*)""$") {
+        if ($Target -match "^""(.*)""$") {
             return $Matches[1]
         } else {
-            return $Trimmed
+            return $Target
         }
     }
 }
