@@ -106,6 +106,7 @@ class SaveInfo {
 
 function Save-WebResponse {
     [OutputType([object])]
+
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [BasicHtmlWebResponseObject] $Response,
         [string] $FileName

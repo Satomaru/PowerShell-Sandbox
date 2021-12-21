@@ -1,8 +1,9 @@
 #Requires -Version 7
 using namespace Microsoft.PowerShell.Commands
 
-function ConvertTo-Unquote {
+function ConvertTo-Trimmed {
     [OutputType([string])]
+
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [string] $Target
     )
@@ -20,6 +21,7 @@ function ConvertTo-Unquote {
 
 function ConvertTo-Bytes {
     [OutputType([byte[]])]
+
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [string] $Target,
         [Parameter(Mandatory)] [string] $Charset
@@ -32,6 +34,7 @@ function ConvertTo-Bytes {
 
 function ConvertTo-Hashtable {
     [OutputType([hashtable])]
+
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [string] $Target,
         [Parameter(Mandatory)] [Alias("ED")] [string] $ElementDelimiter,
@@ -42,7 +45,7 @@ function ConvertTo-Hashtable {
         [hashtable] $Hashtable = @{}
 
         $Target -split $ElementDelimiter | ForEach-Object {
-            [string[]] $Pair = $_ -split $PairSeparator, 2 | ConvertTo-Unquote
+            [string[]] $Pair = $_ -split $PairSeparator, 2 | ConvertTo-Trimmed
 
             if ($pair.Count -eq 2) {
                 $Hashtable.Add($Pair[0], $Pair[1])
@@ -53,6 +56,6 @@ function ConvertTo-Hashtable {
     }
 }
 
-Export-ModuleMember -Function ConvertTo-Unquote
+Export-ModuleMember -Function ConvertTo-Trimmed
 Export-ModuleMember -Function ConvertTo-Bytes
 Export-ModuleMember -Function ConvertTo-Hashtable
