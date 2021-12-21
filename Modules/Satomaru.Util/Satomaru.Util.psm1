@@ -56,7 +56,7 @@ function ConvertTo-Hashtable {
     }
 }
 
-function Test-SameArray {
+function Test-Array {
     [OutputType([boolean])]
 
     Param(
@@ -82,4 +82,4 @@ function Test-SameArray {
 Export-ModuleMember -Function ConvertTo-Trimmed
 Export-ModuleMember -Function ConvertTo-Bytes
 Export-ModuleMember -Function ConvertTo-Hashtable
-Export-ModuleMember -Function Test-SameArray
+Export-ModuleMember -Function Test-Array

@@ -164,14 +164,14 @@ function Get-TextContent {
 
         # エンコードした文字列をもう一度デコードして、正しく復元された場合は、正常にエンコードできたとみなす。
         # なお、エンコードを試みる順番は重要で、以下の意味がある。
-        # ・JISは、必ず正しく復元されるので、一番最初に試みる。
-        # ・EUC-JPは、SHIFT-JISの場合であっても正しく復元されるので、SHIFT-JISよりも先に試みる。
+        # ・JISは、どのエンコーディングでも必ず復元されるので、一番最初に試みる。
+        # ・EUC-JPは、SHIFT-JISでも正しく復元されるので、SHIFT-JISよりも先に試みる。
 
         foreach ($Encoding in @($Script:JIS, $Script:EUC_JP, $Script:SHIFT_JIS, $Script:UTF8)) {
             [string] $Encoded = $Encoding.GetString($Bytes)
             [byte[]] $Actual = $Encoding.GetBytes($Encoded)
 
-            if (Test-SameArray -Actual $Actual -Expected $Bytes) {
+            if (Test-Array -Actual $Actual -Expected $Bytes) {
                 return $Encoded
             }
         }
