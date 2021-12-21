@@ -56,6 +56,30 @@ function ConvertTo-Hashtable {
     }
 }
 
+function Test-SameArray {
+    [OutputType([boolean])]
+
+    Param(
+        [Parameter(Mandatory)] [object[]] $Actual,
+        [Parameter(Mandatory)] [object[]] $Expected
+    )
+
+    Process {
+        if ($Actual.Count -ne $Expected.Count) {
+            return $false
+        }
+
+        for ($Index = 0; $Index -lt $Actual.Count; $Index++) {
+            if ($Actual[$Index] -ne $Expected[$Index]) {
+                return $false
+            }
+        }
+
+        return $true
+    }
+}
+
 Export-ModuleMember -Function ConvertTo-Trimmed
 Export-ModuleMember -Function ConvertTo-Bytes
 Export-ModuleMember -Function ConvertTo-Hashtable
+Export-ModuleMember -Function Test-SameArray

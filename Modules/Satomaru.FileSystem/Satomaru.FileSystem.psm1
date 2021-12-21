@@ -1,6 +1,8 @@
 #Requires -Version 7
 using namespace Microsoft.PowerShell.Commands
 
+Import-Module -Name Satomaru.Util -Force
+
 <#
 .SYNOPSIS
     条件に合った項目を抽出する。
@@ -14,7 +16,7 @@ using namespace Microsoft.PowerShell.Commands
 
 .PARAMETER Extension
     指定した拡張子の項目を抽出する。
-    拡張子はドット "." で開始する。また、カンマ "," で区切って複数指定できる。
+    拡張子はドット "." で開始する。また、カンマ "," で区切って複数指定することができる。
 
 .PARAMETER UpdateBefore
     最終更新日時が指定した値よりも過去の項目を抽出する。
@@ -42,11 +44,11 @@ using namespace Microsoft.PowerShell.Commands
 
 .EXAMPLE
     Get-ChildItem -File -Recurse | Find-Item -Extension .txt, .md -ContentMatch あいうえお
-    拡張子が .txt または .md で、かつ内容に「あいうえお」が存在するファイルが抽出される。
+    拡張子が .txt または .md で、かつ内容に「あいうえお」が存在するファイルを抽出する。
 
 .EXAMPLE
     Get-ChildItem -File -Recurse | Find-Item -UpdateAfter 2021/12/22 -LargerThan 5000
-    最終更新日時が 2021/12/22 00:00:00 以降で、かつファイルサイズが 5,000 byte よりも大きいファイルが抽出される。
+    最終更新日時が 2021/12/22 00:00:00 以降で、かつファイルサイズが 5,000 byte よりも大きいファイルを抽出する。
 #>
 function Find-Item {
     [OutputType([System.IO.FileSystemInfo])]
@@ -169,19 +171,8 @@ function Get-TextContent {
             [string] $Encoded = $Encoding.GetString($Bytes)
             [byte[]] $Actual = $Encoding.GetBytes($Encoded)
 
-            if ($Actual.Count -eq $Bytes.Count) {
-                [boolean] $Hit = $true
-
-                for ($Index = 0; $Index -lt $Actual.Count; $Index++) {
-                    if ($Actual[$Index] -ne $Bytes[$Index]) {
-                        $Hit = $false
-                        break
-                    }
-                }
-
-                if ($Hit) {
-                    return $Encoded
-                }
+            if (Test-SameArray -Actual $Actual -Expected $Bytes) {
+                return $Encoded
             }
         }
 

@@ -1,7 +1,7 @@
 ﻿#Requires -Version 7
 using namespace Microsoft.PowerShell.Commands
 
-Import-Module -Name Satomaru.Util
+Import-Module -Name Satomaru.Util -Force
 
 $Script:Specs = @{
     "*/*"                          = @{ AsText = $false; Extensions = @("dat", "*");                  Charset = "ISO-8859-1" }
