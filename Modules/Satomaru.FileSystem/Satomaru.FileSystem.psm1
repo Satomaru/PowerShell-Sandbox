@@ -149,7 +149,7 @@ function Find-Item {
     テキストファイルの内容。
 
 .EXAMPLE
-    Get-ChildItem -Path .\sample-*.txt | Get-TextContent
+    Get-Item -Path .\sample-*.txt | Get-TextContent
     sample-*.txtを読み込んで、その内容を表示する。
 #>
 function Get-TextContent {
