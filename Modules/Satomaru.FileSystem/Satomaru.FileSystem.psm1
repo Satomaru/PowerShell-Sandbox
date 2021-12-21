@@ -19,7 +19,7 @@ function Search-Item {
         }
 
         if ($ByContent -ne "") {
-            if ($null -ne $Encoding) {
+            if ($null -eq $Encoding) {
                 $Encoding = [FileSystemCmdletProviderEncoding]::Ascii
             }
 
