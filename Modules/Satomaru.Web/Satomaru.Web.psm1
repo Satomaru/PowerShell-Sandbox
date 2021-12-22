@@ -1,7 +1,6 @@
 ﻿#Requires -Version 7
+#Requires -Modules Satomaru.Util
 using namespace Microsoft.PowerShell.Commands
-
-Import-Module -Name Satomaru.Util -Force
 
 $Script:Specs = @{
     "*/*"                          = @{ AsText = $false; Extensions = @("dat", "*");                  Charset = "ISO-8859-1" }
@@ -49,7 +48,7 @@ class ContentTypeInfo {
     ContentTypeInfo([string] $ContentType) {
         $this.ContentType = $ContentType
         $this.Elements = ($ContentType -split ";").Trim()
-        $this.Attributes = ConvertTo-Hashtable -Target $ContentType -ED ";" -PS "="
+        $this.Attributes = $ContentType | New-Hashtable
         $Spec = $Script:Specs[$this.Elements[0]] ?? $Script:Specs[($ContentType.StartsWith("text/")) ? "text/*" : "*/*"]
         $this.Charset = $this.Attributes.charset ?? $Spec.Charset
         $this.AsText = $Spec.AsText
@@ -137,7 +136,7 @@ function Save-WebResponse {
         if ($Info.AsText) {
             $Response.Content `
                 | Out-String `
-                | ConvertTo-Bytes -Charset $Info.Charset `
+                | ForEach-Object { [System.Text.Encoding]::GetEncoding($Info.Charset).GetBytes($_) }
                 | Set-Content -Path $Info.FileName -AsByteStream
         } else {
             $Response.Content `

@@ -1,54 +1,46 @@
 #Requires -Version 7
+#Requires -Modules Satomaru.Util
 using namespace Microsoft.PowerShell.Commands
 
-Import-Module -Name Satomaru.Util -Force
-
 <#
-.SYNOPSIS
-    条件に合った項目を抽出する。
+    .SYNOPSIS
+    項目を抽出する。
 
-.DESCRIPTION
-    パイプラインから項目（ファイルやフォルダ）を受け取り、パラメータの内容で検査する。
+    .DESCRIPTION
+    パイプラインから項目（ファイルやフォルダ）を受け取って検査を行う。
     検査に合格した場合は、受け取った項目をそのまま返却する。
 
-.PARAMETER ReadOnly
+    .PARAMETER ReadOnly
     読み取り専用の項目を抽出する。
 
-.PARAMETER Extension
+    .PARAMETER Extension
     指定した拡張子の項目を抽出する。
     拡張子はドット "." で開始する。また、カンマ "," で区切って複数指定することができる。
 
-.PARAMETER UpdateBefore
+    .PARAMETER UpdateBefore
     最終更新日時が指定した値よりも過去の項目を抽出する。
 
-.PARAMETER UpdateAfter
+    .PARAMETER UpdateAfter
     最終更新日時が指定した値よりも未来の項目を抽出する。
 
-.PARAMETER SmallerThan
+    .PARAMETER SmallerThan
     ファイルサイズが指定した値よりも小さい項目を抽出する。
 
-.PARAMETER LargerThan
+    .PARAMETER LargerThan
     ファイルサイズが指定した値よりも大きい項目を抽出する。
 
-.PARAMETER NameMatch
+    .PARAMETER NameMatch
     名前が指定した正規表現に一致する項目を抽出する。
 
-.PARAMETER ContentMatch
-    内容が指定した正規表現に一致する項目を抽出する。
+    .INPUTS
+    検査する項目。
 
-.INPUTS
-    System.IO.FileSystemInfo
+    .OUTPUTS
+    検査に合格した場合は、検査した項目。
 
-.OUTPUTS
-    System.IO.FileSystemInfo
-
-.EXAMPLE
-    Get-ChildItem -File -Recurse | Find-Item -Extension .txt, .md -ContentMatch あいうえお
-    拡張子が .txt または .md で、かつ内容に「あいうえお」が存在するファイルを抽出する。
-
-.EXAMPLE
-    Get-ChildItem -File -Recurse | Find-Item -UpdateAfter 2021/12/22 -LargerThan 5000
-    最終更新日時が 2021/12/22 00:00:00 以降で、かつファイルサイズが 5,000 byte よりも大きいファイルを抽出する。
+    .EXAMPLE
+    Get-ChildItem -File -Recurse | Find-Item -Extension .txt, .md -LargerThan 5000
+    拡張子が .txt または .md で、ファイルサイズが 5,000 byte より大きいファイルを抽出する。
 #>
 function Find-Item {
     [OutputType([System.IO.FileSystemInfo])]
@@ -59,71 +51,60 @@ function Find-Item {
         [string[]] $Extension,
         [datetime] $UpdateBefore,
         [datetime] $UpdateAfter,
-        [long] $SmallerThan,
-        [long] $LargerThan,
-        [string] $NameMatch,
-        [string] $ContentMatch
+        [object] $SmallerThan,
+        [object] $LargerThan,
+        [regex] $NameMatch
     )
 
     Process {
-        if ($ReadOnly) {
-            if (-not $Item.IsReadOnly) {
-                return
-            }
-        }
+        return $Item `
+            | Find-Object -Name IsReadOnly -EQ $ReadOnly `
+            | Find-Object -Name Extension -Contains $Extension `
+            | Find-Object -Name LastWriteTime -LT $UpdateBefore -GT $UpdateAfter `
+            | Find-Object -Name Length -LT $SmallerThan -GT $LargerThan `
+            | Find-Object -Name Name -Match $NameMatch
+    }
+}
 
-        if ($Extension.Count -gt 0) {
-            if ($Extension -notcontains $Item.Extension) {
-                return
-            }
-        }
+<#
+    .SYNOPSIS
+    テキスト項目を抽出する。
 
-        if ($null -ne $UpdateBefore) {
-            if ($UpdateBefore -le $Item.LastWriteTime) {
-                return
-            }
-        } 
+    .DESCRIPTION
+    パイプラインからテキストファイルを受け取って検査を行う。
+    検査に合格した場合は、受け取った項目をそのまま返却する。
 
-        if ($null -ne $UpdateAfter) {
-            if ($UpdateAfter -ge $Item.LastWriteTime) {
-                return
-            }
-        } 
+    .PARAMETER ContentMatch
+    内容が指定した正規表現に一致する項目を抽出する。
 
-        if ($SmallerThan -gt 0) {
-            if ($SmallerThan -le $Item.Length) {
-                return
-            }
-        }
+    .INPUTS
+    検査する項目。
 
-        if ($LargerThan -gt 0) {
-            if ($LargerThan -ge $Item.Length) {
-                return
-            }
-        }
+    .OUTPUTS
+    検査に合格した場合は、検査した項目。
 
-        if ($NameMatch -ne "") {
-            if ($Item.Name -notmatch $NameMatch) {
-                return
-            }
-        }
+    .EXAMPLE
+    Get-ChildItem -File -Recurse | Find-TextItem -ContentMatch あいうえお
+    内容に「あいうえお」が存在するファイルを抽出する。
+#>
+function Find-TextItem {
+    [OutputType([System.IO.FileSystemInfo])]
 
-        if ($ContentMatch -ne "") {
-            [boolean] $Hit = $false
+    Param(
+        [Parameter(Mandatory, ValueFromPipeline)] [System.IO.FileSystemInfo] $Item,
+        [regex] $ContentMatch
+    )
 
+    Process {
+        if ($ContentMatch) {
             foreach ($Content in $Item | Get-TextContent) {
                 if ($Content -match $ContentMatch) {
-                    $Hit = $true
-                    break
+                    return $Item
                 }
             }
-
-            if (-not $Hit) {
-                return
-            }
+        } else {
+            return $Item
         }
-
-        return $Item
     }
 }
 
@@ -133,22 +114,20 @@ function Find-Item {
 [System.Text.Encoding] $Script:UTF8 = [System.Text.Encoding]::GetEncoding(65001)
 
 <#
-.SYNOPSIS
+    .SYNOPSIS
     テキストファイルの内容を取得する。
 
-.DESCRIPTION
+    .DESCRIPTION
     JIS、EUC-JP、SHIFT-JIS、UTF-8のテキストファイルを読み込み、その内容を返却する。
     上記以外のファイルは、正しく読むことができない。
 
-.INPUTS
-    System.IO.FileSystemInfo
+    .INPUTS
     JIS、EUC-JP、SHIFT-JIS、UTF-8のいずれかのテキストファイル。
 
-.OUTPUTS
-    string
+    .OUTPUTS
     テキストファイルの内容。
 
-.EXAMPLE
+    .EXAMPLE
     Get-Item -Path .\sample-*.txt | Get-TextContent
     sample-*.txtを読み込んで、その内容を表示する。
 #>
@@ -162,6 +141,10 @@ function Get-TextContent {
     Process {
         [byte[]] $Bytes = $Item | Get-Content -AsByteStream
 
+        if ($Bytes.Count -eq 0) {
+            return ""
+        }
+
         # エンコードした文字列をもう一度デコードして、正しく復元された場合は、正常にエンコードできたとみなす。
         # なお、エンコードを試みる順番は重要で、以下の意味がある。
         # ・JISは、どのエンコーディングでも必ず復元されるので、一番最初に試みる。
@@ -171,7 +154,7 @@ function Get-TextContent {
             [string] $Encoded = $Encoding.GetString($Bytes)
             [byte[]] $Actual = $Encoding.GetBytes($Encoded)
 
-            if (Test-Array -Actual $Actual -Expected $Bytes) {
+            if (Test-Array -Actual ([ref] $Actual) -Expected ([ref] $Bytes)) {
                 return $Encoded
             }
         }
@@ -181,4 +164,5 @@ function Get-TextContent {
 }
 
 Export-ModuleMember -Function Find-Item
+Export-ModuleMember -Function Find-TextItem
 Export-ModuleMember -Function Get-TextContent
