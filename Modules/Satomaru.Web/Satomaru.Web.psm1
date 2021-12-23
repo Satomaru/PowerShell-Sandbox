@@ -14,7 +14,7 @@ function Save-WebResponse {
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [WebResponseObject] $Response,
         [string] $FileName
-        )
+    )
 
     Begin {
         [int] $Index = 1
@@ -27,7 +27,7 @@ function Save-WebResponse {
         $Info.ContentType = $ContentTypeInfo.ContentType
         $Info.AsText = $ContentTypeInfo.AsText
         $Info.Encoding = $ContentTypeInfo.Encoding
-        $Info.FileName = $ContentTypeInfo.GetFileName($Info.RequestUri, "response<n>")
+        $Info.FileName = ($FileName) ? $FileName : $ContentTypeInfo.GetFileName($Info.RequestUri, "response<n>")
 
         if ($Info.FileName.Contains("<n>")) {
             $Info.FileName = $Info.FileName.Replace("<n>", $Index++)
