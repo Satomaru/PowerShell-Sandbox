@@ -10,39 +10,39 @@ using namespace Microsoft.PowerShell.Commands
     検査に合格した場合は、受け取ったオブジェクトをそのまま返却する。
     なお、null の場合は、その時点で不合格とする。
 
-    .PARAMETER Name
+    .PARAMETER Property
     オブジェクトの検査対象となるプロパティ名。
     指定しなかった場合は、オブジェクトそのものが検査される。
 
     .PARAMETER Truthy
-    true と解釈されることを期待する。
+    true と解釈されることを検査する。
 
     .PARAMETER Falsy
-    false と解釈されることを期待する。
+    false と解釈されることを検査する。
 
     .PARAMETER EQ
-    指定値と等しいことを期待する。
+    指定値と等しいことを検査する。
 
     .PARAMETER NE
-    指定値と異なることを期待する。
+    指定値と異なることを検査する。
 
     .PARAMETER LT
-    指定値よりも小さいことを期待する。
+    指定値よりも小さいことを検査する。
 
     .PARAMETER LE
-    指定値よりも小さいか等しいことを期待する。
+    指定値よりも小さいか等しいことを検査する。
 
     .PARAMETER GT
-    指定値よりも大きいことを期待する。
+    指定値よりも大きいことを検査する。
 
     .PARAMETER GE
-    指定値よりも大きいか等しいことを期待する。
+    指定値よりも大きいか等しいことを検査する。
 
     .PARAMETER Contains
-    指定値のうちのいずれか一つと等しいことを期待する。
+    指定値のうちのいずれか一つと等しいことを検査する。
 
     .PARAMETER Match
-    指定された正規表現に一致することを期待する。
+    指定された正規表現に一致することを検査する。
 
     .INPUTS
     検査するオブジェクト。
@@ -55,7 +55,7 @@ using namespace Microsoft.PowerShell.Commands
     2, 3, 4 が抽出される。
 
     .EXAMPLE
-    Get-Item *.txt | Find-Object -Name Length -LE 70
+    Get-Item *.txt | Find-Object -Property Length -LE 70
     ファイルサイズが 70 byte 以下の *.txt が抽出される。
 #>
 function Find-Object {
@@ -63,7 +63,7 @@ function Find-Object {
 
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [object] $Target,
-        [string] $Name,
+        [string] $Property,
         [switch] $Truthy,
         [switch] $Falsy,
         [object] $EQ,
@@ -78,7 +78,7 @@ function Find-Object {
 
     Process {
         return $Target `
-            | ForEach-Object { $Name ? $_.$Name : $_ } `
+            | ForEach-Object { $Property ? $_.$Property : $_ } `
             | Where-Object { -not $Truthy -or $_ } `
             | Where-Object { -not $Falsy -or -not $_ } `
             | Where-Object { $null -eq $EQ -or $_ -eq $EQ } `
@@ -255,10 +255,16 @@ function Optimize-String {
 
 <#
     .SYNOPSIS
-    配列が期待どおりであることを判定する。
+    配列が期待どおりであることを検査する。
 
     .DESCRIPTION
     配列の長さ、および各要素の値が等しい場合は true を返却する。
+
+    .PARAMETER Actual
+    検査対象となる配列の参照。
+
+    .PARAMETER Expected
+    期待値となる配列の参照。
 
     .INPUTS
     なし。

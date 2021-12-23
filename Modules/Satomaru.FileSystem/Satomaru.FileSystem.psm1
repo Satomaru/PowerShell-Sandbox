@@ -14,23 +14,23 @@ using namespace Microsoft.PowerShell.Commands
     読み取り専用であることを期待する。
 
     .PARAMETER Extension
-    指定した拡張子であることを期待する。
+    指定した拡張子であることを検査する。
     拡張子はドット "." で開始する。また、カンマ "," で区切って複数指定することができる。
 
     .PARAMETER UpdateBefore
-    最終更新日時が指定した値よりも過去であることを期待する。
+    最終更新日時が指定した値よりも過去であることを検査する。
 
     .PARAMETER UpdateAfter
-    最終更新日時が指定した値よりも未来であることを期待する。
+    最終更新日時が指定した値よりも未来であることを検査する。
 
     .PARAMETER SmallerThan
-    ファイルサイズが指定した値よりも小さいことを期待する。
+    ファイルサイズが指定した値よりも小さいことを検査する。
 
     .PARAMETER LargerThan
-    ファイルサイズが指定した値よりも大きいことを期待する。
+    ファイルサイズが指定した値よりも大きいことを検査する。
 
     .PARAMETER NameMatch
-    名前が指定した正規表現に一致することを期待する。
+    名前が指定した正規表現に一致することを検査する。
 
     .INPUTS
     検査する項目。
@@ -58,11 +58,11 @@ function Find-Item {
 
     Process {
         return $Item `
-            | Find-Object -Name IsReadOnly -EQ $ReadOnly `
-            | Find-Object -Name Extension -Contains $Extension `
-            | Find-Object -Name LastWriteTime -LT $UpdateBefore -GT $UpdateAfter `
-            | Find-Object -Name Length -LT $SmallerThan -GT $LargerThan `
-            | Find-Object -Name Name -Match $NameMatch
+            | Find-Object -Property IsReadOnly -EQ $ReadOnly `
+            | Find-Object -Property Extension -Contains $Extension `
+            | Find-Object -Property LastWriteTime -LT $UpdateBefore -GT $UpdateAfter `
+            | Find-Object -Property Length -LT $SmallerThan -GT $LargerThan `
+            | Find-Object -Property Name -Match $NameMatch
     }
 }
 
@@ -75,7 +75,7 @@ function Find-Item {
     検査に合格した場合は、受け取った項目をそのまま返却する。
 
     .PARAMETER ContentMatch
-    内容が指定した正規表現に一致することを期待する。
+    内容が指定した正規表現に一致することを検査する。
 
     .INPUTS
     検査する項目。
