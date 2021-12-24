@@ -1,5 +1,3 @@
-#Requires -Version 7
-#Requires -Modules Satomaru.Util
 using namespace Microsoft.PowerShell.Commands
 
 <#
@@ -162,7 +160,3 @@ function Get-TextContent {
         return [System.Text.Encoding]::ASCII.GetString($Bytes)
     }
 }
-
-Export-ModuleMember -Function Find-Item
-Export-ModuleMember -Function Find-TextItem
-Export-ModuleMember -Function Get-TextContent

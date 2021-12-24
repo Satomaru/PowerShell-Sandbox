@@ -1,48 +1,83 @@
 ﻿using namespace Microsoft.PowerShell.Commands
 
-class SaveInfo {
-    [Uri] $RequestUri
-    [string] $ContentType
-    [boolean] $AsText
-    [System.Text.Encoding] $Encoding
-    [string] $FileName
+function Get-UriLocalName {
+    [OutputType([string])]
+
+    Param(
+        [Parameter(Mandatory)] [Uri] $Uri,
+        [string] $BaseNameWhenEmpty,
+        [string[]] $Extensions,
+        [boolean] $AllowAnyExts
+    )
+
+    Process {
+        if (-not $Uri.LocalPath) {
+            return $BaseNameWhenEmpty + $Extensions[0]
+        }
+
+        [string] $FileName = [System.IO.Path]::GetFileName($Uri.LocalPath)
+
+        if (-not $FileName) {
+            return $BaseNameWhenEmpty + $Extensions[0]
+        }
+
+        [System.IO.FileInfo] $FileInfo = [System.IO.FileInfo]::new($FileName)
+
+        if (-not $FileInfo.Extension) {
+            return $FileInfo.BaseName + $Extensions[0]
+        }
+
+        if ($AllowAnyExts -or $Extensions.Contains($FileInfo.Extension)) {
+            return $FileInfo.Name
+        }
+
+        return $FileInfo.BaseName + $Extensions[0]
+    }
 }
 
 function Save-WebResponse {
-    [OutputType([object])]
+    [OutputType([hashtable])]
 
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [WebResponseObject] $Response,
-        [string] $FileName
+        [string] $BaseNameWhenEmpty = "response<n>"
     )
 
     Begin {
-        [int] $Index = 1
-    }    
+        [int] $ResponseIndex = 1
+    }
 
     Process {
-        [ContentTypeInfo] $ContentTypeInfo = [ContentTypeInfo]::new($Response.Headers["Content-Type"])
-        [SaveInfo] $Info = [SaveInfo]::new()
-        $Info.RequestUri = $Response.BaseResponse.RequestMessage.RequestUri
-        $Info.ContentType = $ContentTypeInfo.ContentType
-        $Info.AsText = $ContentTypeInfo.AsText
-        $Info.Encoding = $ContentTypeInfo.Encoding
-        $Info.FileName = ($FileName) ? $FileName : $ContentTypeInfo.GetFileName($Info.RequestUri, "response<n>")
+        [Uri] $Uri = $Response.BaseResponse.RequestMessage.RequestUri
+        [string] $ContentType = $Response.Headers["Content-Type"]
+        [hashtable] $ContentSpec = Get-ContentSpec -ContentType $ContentType
+        [string] $FileName = Get-UriLocalName -Uri $Uri -BaseNameWhenEmpty $BaseNameWhenEmpty -Extensions $ContentSpec.Exts -AllowAnyExts $ContentSpec.AnyExts
 
-        if ($Info.FileName.Contains("<n>")) {
-            $Info.FileName = $Info.FileName.Replace("<n>", $Index++)
+        if ($FileName.Contains("<n>")) {
+            $FileName = $FileName.Replace("<n>", $ResponseIndex++)
         }
 
-        if ($Info.AsText) {
+        [string] $Charset = $null
+
+        if ($ContentSpec.AsText) {
+            $Charset = $ContentSpec.Charset ?? "ISO-8859-1"
+            [System.Text.Encoding] $Encoding = [System.Text.Encoding]::GetEncoding($Charset)
+
             $Response.Content `
                 | Out-String `
-                | ForEach-Object { $Info.Encoding.GetBytes($_) } `
-                | Set-Content -Path $Info.FileName -AsByteStream
+                | ForEach-Object { $Encoding.GetBytes($_) } `
+                | Set-Content -Path $FileName -AsByteStream
         } else {
             $Response.Content `
-                | Set-Content -Path $Info.FileName -AsByteStream
+                | Set-Content -Path $FileName -AsByteStream
         }
 
-        return $Info
+        return @{
+            Uri = $Uri
+            ContentType = $ContentType
+            FileName = $FileName
+            AsText = $ContentSpec.AsText
+            Charset = $Charset
+        }
     }
 }

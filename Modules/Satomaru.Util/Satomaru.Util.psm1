@@ -1,4 +1,3 @@
-#Requires -Version 7
 using namespace Microsoft.PowerShell.Commands
 
 <#
@@ -9,6 +8,9 @@ using namespace Microsoft.PowerShell.Commands
     パイプラインからオブジェクトを受け取って検査を行う。
     検査に合格した場合は、受け取ったオブジェクトをそのまま返却する。
     なお、null の場合は、その時点で不合格とする。
+
+    .PARAMETER Target
+    検査するオブジェクト。
 
     .PARAMETER Property
     オブジェクトの検査対象となるプロパティ名。
@@ -95,127 +97,6 @@ function Find-Object {
 
 <#
     .SYNOPSIS
-    ハッシュテーブルをまとめる。
-
-    .DESCRIPTION
-    パイプラインで受け取ったハッシュテーブルから全てのエントリを取得して、
-    パラメータで指定されたハッシュテーブルに追加する。
-
-    .PARAMETER To
-    エントリの追加先となるハッシュテーブルの参照。
-
-    .INPUTS
-    ハッシュテーブル。
-
-    .OUTPUTS
-    なし。
-
-    .EXAMPLE
-    "foo=1; bar=2" -split ";" | New-KeyValue | Join-Hashtable -To ([ref] $map)
-    $mapに、foo と bar のエントリが追加される。
-#>
-function Join-Hashtable {
-    [OutputType([void])]
-
-    Param(
-        [Parameter(Mandatory, ValueFromPipeline)] [hashtable] $From,
-        [Parameter(Mandatory)] [hashtable] [ref] $To
-    )
-
-    Process {
-        foreach ($Key in $From.Keys) {
-            $To.Add($Key, $From.$Key)
-        }
-    }
-}
-
-<#
-    .SYNOPSIS
-    ハッシュテーブルを作成する。
-
-    .DESCRIPTION
-    パイプラインで受け取った文字列からエントリ式を解析し、作成したハッシュテーブルに追加する。
-    なおエントリ式の左辺と右辺は、Optimize-String によって最適化される。
-
-    .PARAMETER ExpressionDelimiter
-    別名 "ED"。エントリ式の区切り記号。未指定時は ";" が用いられる。
-
-    .PARAMETER ExpressionDelimiter
-    別名 "KS"。エントリ式の左辺と右辺の区切り記号。未指定時は "=" が用いられる。
-
-    .INPUTS
-    エントリ式を表す文字列。
-
-    .OUTPUTS
-    ハッシュテーブル。
-
-    .EXAMPLE
-    "foo=1; bar=2" | New-Hashtable
-    foo と bar のエントリを持つハッシュテーブルを返却する。
-#>
-function New-Hashtable {
-    [OutputType([hashtable])]
-
-    Param(
-        [Parameter(Mandatory, ValueFromPipeline)] [string] $Target,
-        [Alias("ED")] [string] $ExpressionDelimiter = ";",
-        [Alias("KS")] [string] $KeyValueSeparator = "="
-    )
-
-    Process {
-        [hashtable] $Hashtable = @{}
-
-        $Target -split $ExpressionDelimiter `
-            | New-KeyValue -Separator $KeyValueSeparator `
-            | Join-Hashtable -To ([ref] $Hashtable)
-
-        return $Hashtable
-    }
-}
-
-<#
-    .SYNOPSIS
-    エントリ式を解析して結果をハッシュテーブルで返す。
-
-    .DESCRIPTION
-    エントリ式の左辺と右辺は、Optimize-Stringによって最適化される。
-    なお、文字列をエントリ式とみなせなかった場合は、空のハッシュテーブルを返却する。
-
-    .PARAMETER Separator
-    エントリ式の左辺と右辺の区切り記号。未指定時は "=" が用いられる。
-
-    .INPUTS
-    エントリ式を表す文字列。
-
-    .OUTPUTS
-    ハッシュテーブル。
-
-    .EXAMPLE
-    " foo = 'abc' " | New-KeyValue
-    @{ foo = "abc" } が返却される。
-#>
-function New-KeyValue {
-    [OutputType([hashtable])]
-
-    Param(
-        [Parameter(Mandatory, ValueFromPipeline)] [string] $Target,
-        [string] $Separator = "="
-    )
-
-    Process {
-        [hashtable] $KeyValue = @{}
-        [string[]] $Pair = $Target -split $Separator, 2 | Optimize-String
-
-        if ($Pair.Count -eq 2) {
-            $KeyValue.Add($Pair[0], $Pair[1])
-        }
-
-        return $KeyValue
-    }
-}
-
-<#
-    .SYNOPSIS
     文字列を最適化する。
 
     .DESCRIPTION
@@ -223,6 +104,9 @@ function New-KeyValue {
     クォートの解除は、先頭と末尾がともにダブルクォート、
     またはともにシングルクォートの場合のみ行う。
     
+    .PARAMETER Target
+    最適化する文字列。
+
     .INPUTS
     最適化する文字列。
 
@@ -249,6 +133,60 @@ function Optimize-String {
             return $Matches[1]
         } else {
             return $Target
+        }
+    }
+}
+
+<#
+    .SYNOPSIS
+    パラメータ文字列を要素毎に分割する。
+
+    .DESCRIPTION
+    まずパラメータ文字列をパーツ区切り文字で分割する。
+    パーツがプロパティ式の様式になってい場合は、さらに名前と値に分割する。
+
+    .PARAMETER Parameter
+    パラメータ文字列。
+
+    .PARAMETER Values
+    プロパティ式の名前と値を格納する、ハッシュテーブルの参照。
+
+    .PARAMETER PartsDelimiter
+    別名 "PD"。パーツ区切り文字。省略時は ";" を用いる。
+
+    .PARAMETER ValueSeparator
+    別名 "VS"。プロパティ式の値区切り文字。省略時は "=" を用いる。
+    
+    .INPUTS
+    パラメータ文字列。
+
+    .OUTPUTS
+    パーツ区切り文字で分割された、パーツの配列。
+
+    .EXAMPLE
+    [string[]] $Parts = "text/html; charset=UTF-8" | Split-Parameter -Values ([ref] $Values)
+    $Parts には @("text/html", "charset=UTF-8") が、$Props には @{charset = "UTF-8"} が格納される。
+#>
+function Split-Parameter {
+    [OutputType([string[]])]
+
+    Param(
+        [Parameter(Mandatory, ValueFromPipeline)] [string] $Parameter,
+        [Parameter(Mandatory)] [hashtable] [ref] $Values,
+        [Alias("PD")] [string] $PartsDelimiter = ";",
+        [Alias("VS")] [string] $ValueSeparator = "="
+    )
+
+    Process {
+        return $Parameter -split $PartsDelimiter | ForEach-Object {
+            [string] $Part = $_.Trim()
+            [string[]] $Pair = $Part -split $ValueSeparator, 2 | Optimize-String
+
+            if ($Pair.Count -eq 2) {
+                $Values.Add($Pair[0], $Pair[1])
+            }
+
+            return $Part
         }
     }
 }
@@ -298,10 +236,3 @@ function Test-Array {
         return $true
     }
 }
-
-Export-ModuleMember -Function Find-Object
-Export-ModuleMember -Function Join-Hashtable
-Export-ModuleMember -Function New-Hashtable
-Export-ModuleMember -Function New-KeyValue
-Export-ModuleMember -Function Optimize-String
-Export-ModuleMember -Function Test-Array

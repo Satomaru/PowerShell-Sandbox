@@ -8,5 +8,9 @@ function importAll {
     }
 }
 
+function import([string] $SubName) {
+    Import-Module -Name "Satomaru.$SubName" -Force -Verbose
+}
+
 Set-Location ~\OneDrive\ドキュメント\PowerShell
 Get-Location
