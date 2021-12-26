@@ -1,11 +1,9 @@
-using namespace Microsoft.PowerShell.Commands
-
 <#
     .SYNOPSIS
     オブジェクトを抽出する。
 
     .DESCRIPTION
-    パイプラインからオブジェクトを受け取って検査を行う。
+    オブジェクトを受け取って検査を行う。
     検査に合格した場合は、受け取ったオブジェクトをそのまま返却する。
     なお、null の場合は、その時点で不合格とする。
 
@@ -89,7 +87,7 @@ function Find-Object {
             | Where-Object { $null -eq $LE -or $_ -le $LE } `
             | Where-Object { $null -eq $GT -or $_ -gt $GT } `
             | Where-Object { $null -eq $GE -or $_ -ge $GE } `
-            | Where-Object { -not $Contains -or $Contains -contains $_ } `
+            | Where-Object { -not $Contains -or $Contains.Contains($_) } `
             | Where-Object { -not $Match -or $_ -match $Match } `
             | ForEach-Object { $Target }
     }
@@ -143,7 +141,7 @@ function Optimize-String {
 
     .DESCRIPTION
     まずパラメータ文字列をパーツ区切り文字で分割する。
-    パーツがプロパティ式の様式になってい場合は、さらに名前と値に分割する。
+    分割したパーツがプロパティ式の書式になってい場合は、さらに名前と値に分割する。
 
     .PARAMETER Parameter
     パラメータ文字列。
@@ -172,7 +170,7 @@ function Split-Parameter {
 
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [string] $Parameter,
-        [Parameter(Mandatory)] [hashtable] [ref] $Values,
+        [hashtable] [ref] $Values,
         [Alias("PD")] [string] $PartsDelimiter = ";",
         [Alias("VS")] [string] $ValueSeparator = "="
     )
@@ -180,10 +178,13 @@ function Split-Parameter {
     Process {
         return $Parameter -split $PartsDelimiter | ForEach-Object {
             [string] $Part = $_.Trim()
-            [string[]] $Pair = $Part -split $ValueSeparator, 2 | Optimize-String
 
-            if ($Pair.Count -eq 2) {
-                $Values.Add($Pair[0], $Pair[1])
+            if ($null -ne $Values) {
+                [string[]] $Pair = $Part -split $ValueSeparator, 2 | Optimize-String
+
+                if ($Pair.Count -eq 2) {
+                    $Values.Add($Pair[0], $Pair[1])
+                }
             }
 
             return $Part

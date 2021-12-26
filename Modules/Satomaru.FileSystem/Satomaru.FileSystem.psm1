@@ -1,12 +1,13 @@
-using namespace Microsoft.PowerShell.Commands
-
 <#
     .SYNOPSIS
     項目を抽出する。
 
     .DESCRIPTION
-    パイプラインから項目（ファイルやフォルダ）を受け取って検査を行う。
+    項目（ファイルやフォルダ）を受け取って検査を行う。
     検査に合格した場合は、受け取った項目をそのまま返却する。
+
+    .PARAMETER Item
+    検査する項目。
 
     .PARAMETER ReadOnly
     読み取り専用であることを期待する。
@@ -66,24 +67,27 @@ function Find-Item {
 
 <#
     .SYNOPSIS
-    テキスト項目を抽出する。
+    テキストファイルを抽出する。
 
     .DESCRIPTION
-    パイプラインからテキストファイルを受け取って検査を行う。
-    検査に合格した場合は、受け取った項目をそのまま返却する。
+    テキストファイルを受け取って検査を行う。
+    検査に合格した場合は、受け取ったテキストファイルをそのまま返却する。
+
+    .PARAMETER Item
+    検査するテキストファイル。
 
     .PARAMETER ContentMatch
     内容が指定した正規表現に一致することを検査する。
 
     .INPUTS
-    検査する項目。
+    検査するテキストファイル。
 
     .OUTPUTS
-    検査に合格した場合は、検査した項目。
+    検査に合格した場合は、検査したテキストファイル。
 
     .EXAMPLE
     Get-ChildItem -File -Recurse | Find-TextItem -ContentMatch あいうえお
-    内容に「あいうえお」が存在するファイルを抽出する。
+    内容に「あいうえお」が存在するテキストファイルを抽出する。
 #>
 function Find-TextItem {
     [OutputType([System.IO.FileSystemInfo])]

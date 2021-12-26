@@ -3,7 +3,7 @@ function prompt {
 }
 
 function importAll {
-    Get-ChildItem -Path ~\OneDrive\ドキュメント\PowerShell\Modules -Directory | ForEach-Object {
+    Get-ChildItem -Path .\Modules -Directory | ForEach-Object {
         Import-Module -Name $_.Name -Force -Verbose
     }
 }
