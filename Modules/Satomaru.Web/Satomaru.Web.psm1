@@ -9,20 +9,13 @@
     "application/octet-stream"     = @{ AsText = $false; AnyExts = $true;  Exts = @(".dat") }
     "application/pdf"              = @{ AsText = $false; AnyExts = $false; Exts = @(".pdf") }
     "application/zip"              = @{ AsText = $false; AnyExts = $false; Exts = @(".zip") }
-    "application/x-gzip"           = @{ AsText = $false; AnyExts = $false; Exts = @(".gz") }
-    "application/x-zip-compressed" = @{ AsText = $false; AnyExts = $false; Exts = @(".zip") }
     "audio/mpeg"                   = @{ AsText = $false; AnyExts = $false; Exts = @(".mp3") }
     "audio/wav"                    = @{ AsText = $false; AnyExts = $false; Exts = @(".wav") }
-    "audio/x-mpeg"                 = @{ AsText = $false; AnyExts = $false; Exts = @(".mp3") }
-    "audio/x-wav"                  = @{ AsText = $false; AnyExts = $false; Exts = @(".wav") }
     "image/bmp"                    = @{ AsText = $false; AnyExts = $false; Exts = @(".bmp") }
     "image/gif"                    = @{ AsText = $false; AnyExts = $false; Exts = @(".gif") }
     "image/jpeg"                   = @{ AsText = $false; AnyExts = $false; Exts = @(".jpg", ".jpeg") }
     "image/png"                    = @{ AsText = $false; AnyExts = $false; Exts = @(".png") }
     "image/svg+xml"                = @{ AsText = $true;  AnyExts = $false; Exts = @(".svg") }
-    "image/x-bmp"                  = @{ AsText = $false; AnyExts = $false; Exts = @(".bmp") }
-    "image/x-ms-bmp"               = @{ AsText = $false; AnyExts = $false; Exts = @(".bmp") }
-    "image/x-png"                  = @{ AsText = $false; AnyExts = $false; Exts = @(".png") }
     "text/*"                       = @{ AsText = $true;  AnyExts = $true;  Exts = @(".txt") }
     "text/css"                     = @{ AsText = $true;  AnyExts = $false; Exts = @(".css") }
     "text/csv"                     = @{ AsText = $true;  AnyExts = $false; Exts = @(".csv") }
@@ -31,9 +24,8 @@
     "text/plain"                   = @{ AsText = $true;  AnyExts = $false; Exts = @(".txt") }
     "video/quicktime"              = @{ AsText = $false; AnyExts = $false; Exts = @(".mov", ".moov", ".qt") }
     "video/mp4"                    = @{ AsText = $false; AnyExts = $false; Exts = @(".mp4") }
-    "video/mpeg"                   = @{ AsText = $false; AnyExts = $false; Exts = @(".mpeg") }
-    "video/x-mpeg"                 = @{ AsText = $false; AnyExts = $false; Exts = @(".mpeg", ".mpg", ".mpe", ".mpv") }
-    "vide/x-msvideo"               = @{ AsText = $false; AnyExts = $false; Exts = @(".avi") }
+    "video/mpeg"                   = @{ AsText = $false; AnyExts = $false; Exts = @(".mpeg", ".mpg", ".mpe", ".mpv") }
+    "video/x-msvideo"               = @{ AsText = $false; AnyExts = $false; Exts = @(".avi") }
 }
 
 function Get-ContentSpec {
