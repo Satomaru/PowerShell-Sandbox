@@ -1,6 +1,6 @@
 ﻿using namespace Microsoft.PowerShell.Commands
 
-[hashtable] $Script:ContentSpec = @{
+[hashtable] $Script:ContentSpecs = @{
     "*/*"                          = @{ AsText = $false; AnyExts = $true;  Exts = @(".dat") }
     "application/gzip"             = @{ AsText = $false; AnyExts = $false; Exts = @(".gz") }
     "application/java-archiver"    = @{ AsText = $false; AnyExts = $false; Exts = @(".jar") }
@@ -25,7 +25,7 @@
     "video/quicktime"              = @{ AsText = $false; AnyExts = $false; Exts = @(".mov", ".moov", ".qt") }
     "video/mp4"                    = @{ AsText = $false; AnyExts = $false; Exts = @(".mp4") }
     "video/mpeg"                   = @{ AsText = $false; AnyExts = $false; Exts = @(".mpeg", ".mpg", ".mpe", ".mpv") }
-    "video/x-msvideo"               = @{ AsText = $false; AnyExts = $false; Exts = @(".avi") }
+    "video/x-msvideo"              = @{ AsText = $false; AnyExts = $false; Exts = @(".avi") }
 }
 
 function Get-ContentSpec {
@@ -48,15 +48,15 @@ function Get-ContentSpec {
             "*/*"
         }
 
-        [hashtable] $Spec = $Script:ContentSpec[$Key]
+        [hashtable] $Item = $Script:ContentSpecs[$Key]
 
         return @{
             ContentTypeHeader = $ContentTypeHeader
             Type = $Parts[0]
-            AsText = $Spec.AsText
+            AsText = $Item.AsText
             Charset = $Values.charset
-            AnyExts = $Spec.AnyExts
-            Exts = $Spec.Exts
+            AnyExts = $Item.AnyExts
+            Exts = $Item.Exts
         }
     }
 }
