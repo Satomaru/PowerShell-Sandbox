@@ -40,7 +40,7 @@ function Get-ContentSpec {
         [hashtable] $Values = @{}
         [string[]] $Parts = $ContentTypeHeader | Split-Parameter -Values ([ref] $Values)
 
-        [string] $Key = if ($Script:ContentSpec.ContainsKey($Parts[0])) {
+        [string] $Key = if ($Script:ContentSpecs.ContainsKey($Parts[0])) {
             $Parts[0]
         } elseif ($ContentTypeHeader.StartsWith("text/")) {
             "text/*"
