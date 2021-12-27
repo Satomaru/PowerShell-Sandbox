@@ -1,4 +1,6 @@
 ﻿using namespace Microsoft.PowerShell.Commands
+using namespace System.Management.Automation
+using module Satomaru.Validator
 
 [hashtable] $Script:ContentSpecs = @{
     "*/*"                          = @{ AsText = $false; AnyExts = $true;  Exts = @(".dat") }
@@ -51,6 +53,7 @@ function Get-ContentSpec {
         [hashtable] $Item = $Script:ContentSpecs[$Key]
 
         return @{
+            RequestUri = $Response.BaseResponse.RequestMessage.RequestUri
             ContentTypeHeader = $ContentTypeHeader
             Type = $Parts[0]
             AsText = $Item.AsText
@@ -111,6 +114,8 @@ function Resolve-Encoding {
             [System.Text.Encoding]::GetEncoding($ContentSpec.Charset)
         } elseif ($ContentSpec.Type -eq "text/html") {
             Search-HtmlEncoding -Html $Response.Content
+        } elseif ($ContentSpec.Type -eq "text/css") {
+            Search-CssEncoding -Css $Response.Content
         }
 
         return $Encoding ?? $Response.Encoding
@@ -137,46 +142,145 @@ function Search-HtmlEncoding {
     }
 }
 
+function Search-CssEncoding {
+    [OutputType([System.Text.Encoding])]
+
+    Param(
+        [Parameter(Mandatory)] [string] $Css
+    )
+
+    Process {
+        foreach ($Element in $Css -split "`r|`r`n") {
+            if ($Element -match '^@charset\s+"(?<charset>.+?)"') {
+                return [System.Text.Encoding]::GetEncoding($Matches["charset"])
+            }
+        }
+    }
+}
+
+<#
+    .SYNOPSIS
+    Webレスポンスを保存する。
+
+    .DESCRIPTION
+    Invoke-WebRequestの結果をファイルに保存する。
+    ファイル名は、Webレスポンスの内容から決定される。
+    テキストファイルの場合は、オリジナルの文字セットでエンコードされる。
+    
+    .PARAMETER Response
+    保存するWebレスポンス。
+    
+    .PARAMETER BaseName
+    保存するファイル名のベース名に使用される。
+    なお "{n}" は、パイプラインのループ回数に置換される。
+    
+    .PARAMETER Directory
+    ファイルを保存するディレクトリを指定する。
+    
+    .PARAMETER NamingFromUri
+    指定すると、リクエストURIからファイル名が作成される。
+    リクエストURIが末端 (Leaf) でない場合は、BaseName が使用される。
+    また、リクエストURIが拡張子を持たない、またはコンテントタイプにふさわしくない拡張子の場合は、
+    コンテントタイプにふさわしい拡張子が代わりに使用される。
+    
+    .PARAMETER Overwrite
+    指定すると、ファイルが既に存在する場合は上書きされる。
+
+    .INPUTS
+    保存するWebレスポンス。
+
+    .OUTPUTS
+    保存情報。
+
+    .EXAMPLE
+    Invoke-WebRequest "https://placeimg.com/800/600/any.jpg" | Save-WebResponse -Directory work -NamingFromUri -Overwrite
+    .\work\any.jpg が作成される。既に存在する場合は上書きされる。
+
+    .EXAMPLE
+    Invoke-WebRequest google.com | Save-WebResponse -BaseName index -Directory work -ErrorAction Stop
+    .\index.html が作成される。既に存在する場合は、例外が発生して処理が停止する。
+#>
 function Save-WebResponse {
+    [CmdletBinding()] 
     [OutputType([hashtable])]
 
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [WebResponseObject] $Response,
-        [string] $BaseNameWhenEmpty = "response<n>"
+        [string] [ValidateNotNullOrEmpty()] [ValidateFileName()] $BaseName = "response{n}",
+        [string] [ValidateNotNullOrEmpty()] [ValidateDirectory()] $Directory = ".",
+        [switch] $NamingFromUri,
+        [switch] $Overwrite
     )
 
     Begin {
         [int] $ResponseIndex = 1
+        $Directory = Resolve-Path -LiteralPath $Directory
     }
 
     Process {
         [hashtable] $ContentSpec = $Response | Get-ContentSpec
-        [string] $Charset = $null
-        [string] $FileName = $Response | Resolve-LocalName -BaseNameWhenEmpty $BaseNameWhenEmpty
 
-        if ($FileName.Contains("<n>")) {
-            $FileName = $FileName.Replace("<n>", $ResponseIndex++)
-        }
-
-        if ($ContentSpec.AsText) {
-            [System.Text.Encoding] $Encoding = $Response | Resolve-Encoding
-            $Charset = $Encoding.WebName
-
-            $Response.Content `
-                | Out-String `
-                | ForEach-Object { $Encoding.GetBytes($_) } `
-                | Set-Content -Path $FileName -AsByteStream
-        } else {
-            $Response.Content `
-                | Set-Content -Path $FileName -AsByteStream
-        }
-
-        return @{
-            Uri = $Response.BaseResponse.RequestMessage.RequestUri
+        [hashtable] $Info = @{
+            RequestUri = $ContentSpec.RequestUri
             ContentType = $ContentSpec.ContentTypeHeader
-            FileName = $FileName
+            FileName = ""
             AsText = $ContentSpec.AsText
-            Charset = $Charset
+            Encoding = $Response | Resolve-Encoding
+            Charset = ""
+            Error = $false
+            Exception = $null
+            Description = ""
         }
+
+        $Info.FileName = if ($NamingFromUri) {
+            $Response | Resolve-LocalName -BaseNameWhenEmpty $BaseName
+        } else {
+            $BaseName + $ContentSpec.Exts[0]
+        }
+
+        if ($Info.FileName.Contains("{n}")) {
+            $Info.FileName = $Info.FileName.Replace("{n}", $ResponseIndex++)
+        }
+
+        $Info.FileName = [System.IO.Path]::Combine($Directory, $Info.FileName)
+
+        if (-not $Overwrite) {
+            if (Test-Path -LiteralPath $Info.FileName) {
+                $Info.Error = $true
+                $Info.Description = "Overwriteスイッチが指定されていません。"
+
+                if ($ErrorActionPreference -eq [ActionPreference]::Stop) {
+                    throw [System.AggregateException]::new($Info.Description)
+                } else {
+                    return $Info
+                }
+            }
+        }
+
+        try {
+            if ($Info.AsText) {
+                $Info.Charset = $Info.Encoding.WebName
+
+                $Response.Content `
+                    | Out-String `
+                    | ForEach-Object { $Info.Encoding.GetBytes($_) } `
+                    | Set-Content -Path $Info.FileName -AsByteStream
+            } else {
+                $Response.Content `
+                    | Set-Content -Path $Info.FileName -AsByteStream
+            }
+        } catch {
+            $Info.Error = $true
+            $Info.Exception = $_.Exception
+            $Info.Description = $_.Exception.Message
+
+            if ($ErrorActionPreference -eq [ActionPreference]::Stop) {
+                throw $_.Exception
+            } else {
+                return $Info
+            }
+        }
+
+        return $Info
     }
 }
