@@ -192,16 +192,25 @@ function Search-CssEncoding {
     .OUTPUTS
     保存情報。
 
+    - Done:        保存した場合は $false
+    - RequestUri:  リクエストURI
+    - ContentType: Content-Type ヘッダー
+    - FileName:    保存したファイル名
+    - AsText:      テキストとして保存した場合は $true
+    - Encoding:    テキストとして保存した場合は、使用したエンコード
+    - Exception:   保存時に発生した例外
+
     .EXAMPLE
     Invoke-WebRequest "https://placeimg.com/800/600/any.jpg" | Save-WebResponse -Directory work -NamingFromUri -Overwrite
+
     .\work\any.jpg が作成される。既に存在する場合は上書きされる。
 
     .EXAMPLE
     Invoke-WebRequest google.com | Save-WebResponse -BaseName index -Directory work -ErrorAction Stop
+
     .\index.html が作成される。既に存在する場合は、例外が発生して処理が停止する。
 #>
 function Save-WebResponse {
-    [CmdletBinding()] 
     [OutputType([hashtable])]
 
     Param(
@@ -221,15 +230,13 @@ function Save-WebResponse {
         [hashtable] $ContentSpec = $Response | Get-ContentSpec
 
         [hashtable] $Info = @{
+            Done = $false
             RequestUri = $ContentSpec.RequestUri
             ContentType = $ContentSpec.ContentTypeHeader
             FileName = ""
             AsText = $ContentSpec.AsText
             Encoding = $Response | Resolve-Encoding
-            Charset = ""
-            Error = $false
             Exception = $null
-            Description = ""
         }
 
         $Info.FileName = if ($NamingFromUri) {
@@ -246,40 +253,40 @@ function Save-WebResponse {
 
         if (-not $Overwrite) {
             if (Test-Path -LiteralPath $Info.FileName) {
-                $Info.Error = $true
-                $Info.Description = "Overwriteスイッチが指定されていません。"
+                Show-Warning  `
+                    -Message "同名のファイルが既に存在しています。: $($Info.FileName)" `
+                    -Title "Save-WebResponse" `
+                    -WarningAction $WarningPreference
+            }
+        }
 
-                if ($ErrorActionPreference -eq [ActionPreference]::Stop) {
-                    throw [System.AggregateException]::new($Info.Description)
+        [boolean] $Retry = $false
+
+        do {
+            $Retry = $false
+            $Info.Exception = $null
+
+            try {
+                if ($Info.AsText) {
+                    $Response.Content `
+                        | Out-String `
+                        | ForEach-Object { $Info.Encoding.GetBytes($_) } `
+                        | Set-Content -Path $Info.FileName -AsByteStream -ErrorAction Stop
                 } else {
-                    return $Info
+                    $Response.Content `
+                        | Set-Content -Path $Info.FileName -AsByteStream -ErrorAction Stop
                 }
-            }
-        }
+    
+                $Info.Done = $true
+            } catch {
+                $Info.Exception = $_.Exception
 
-        try {
-            if ($Info.AsText) {
-                $Info.Charset = $Info.Encoding.WebName
-
-                $Response.Content `
-                    | Out-String `
-                    | ForEach-Object { $Info.Encoding.GetBytes($_) } `
-                    | Set-Content -Path $Info.FileName -AsByteStream
-            } else {
-                $Response.Content `
-                    | Set-Content -Path $Info.FileName -AsByteStream
+                $Retry = Show-Exception -CanRetry `
+                    -Exception $_.Exception `
+                    -Title "Save-WebResponse" `
+                    -ErrorAction $ErrorActionPreference
             }
-        } catch {
-            $Info.Error = $true
-            $Info.Exception = $_.Exception
-            $Info.Description = $_.Exception.Message
-
-            if ($ErrorActionPreference -eq [ActionPreference]::Stop) {
-                throw $_.Exception
-            } else {
-                return $Info
-            }
-        }
+        } while ($Retry)
 
         return $Info
     }
