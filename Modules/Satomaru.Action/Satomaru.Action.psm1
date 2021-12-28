@@ -46,25 +46,17 @@ function Show-Warning {
     )
 
     Process {
-        switch ($WarningPreference) {
-            ([ActionPreference]::Continue) {
+        if ($WarningPreference -eq [ActionPreference]::Inquire) {
+            [string] $Confirm = @($Message, "", "続行しますか？") | Out-String
+            [DialogResult] $Result = [MessageBox]::Show($Confirm, $Title, [MessageBoxButtons]::OKCancel, [MessageBoxIcon]::Warning)
+
+            if ($Result -eq [DialogResult]::OK) {
                 Write-Warning -Message $Message -WarningAction Continue
-            }
-
-            ([ActionPreference]::Inquire) {
-                [string] $Confirm = @($Message, "", "続行しますか？") | Out-String
-                [DialogResult] $Result = [MessageBox]::Show($Confirm, $Title, [MessageBoxButtons]::OKCancel, [MessageBoxIcon]::Warning)
-
-                if ($Result -eq [DialogResult]::OK) {
-                    Write-Warning -Message $Message -WarningAction Continue
-                } else {
-                    Write-Warning -Message $Message -WarningAction Stop
-                }
-            }
-
-            ([ActionPreference]::Stop) {
+            } else {
                 Write-Warning -Message $Message -WarningAction Stop
             }
+        } else {
+            Write-Warning -Message $Message -WarningAction $WarningPreference
         }
     }
 }
@@ -121,39 +113,31 @@ function Show-Exception {
     )
 
     Process {
-        switch ($ErrorActionPreference) {
-            ([ActionPreference]::Continue) {
-                Write-Error -Exception $Exception -ErrorAction Continue
-            }
+        if ($ErrorActionPreference -eq [ActionPreference]::Inquire) {
+            [string] $Prompt = $CanRetry ? "再試行しますか？" : "続行しますか？"
+            [string] $Confirm = @($Exception.Message, "", $Prompt) | Out-String
+            [MessageBoxButtons] $Buttons = $CanRetry ? [MessageBoxButtons]::AbortRetryIgnore : [MessageBoxButtons]::OKCancel
+            [DialogResult] $Result = [MessageBox]::Show($Confirm, $Title, $Buttons, [MessageBoxIcon]::Exclamation)
 
-            ([ActionPreference]::Inquire) {
-                [string] $Prompt = $CanRetry ? "再試行しますか？" : "続行しますか？"
-                [string] $Confirm = @($Exception.Message, "", $Prompt) | Out-String
-                [MessageBoxButtons] $Buttons = $CanRetry ? [MessageBoxButtons]::AbortRetryIgnore : [MessageBoxButtons]::OKCancel
-                [DialogResult] $Result = [MessageBox]::Show($Confirm, $Title, $Buttons, [MessageBoxIcon]::Exclamation)
+            switch ($Result) {
+                ([DialogResult]::Ignore) {
+                    Write-Error -Exception $Exception -ErrorAction Continue
+                }
 
-                switch ($Result) {
-                    ([DialogResult]::Ignore) {
-                        Write-Error -Exception $Exception -ErrorAction Continue
-                    }
+                ([DialogResult]::Retry) {
+                    return $true
+                }
 
-                    ([DialogResult]::Retry) {
-                        return $true
-                    }
+                ([DialogResult]::OK) {
+                    Write-Error -Exception $Exception -ErrorAction Continue
+                }
 
-                    ([DialogResult]::OK) {
-                        Write-Error -Exception $Exception -ErrorAction Continue
-                    }
-
-                    default {
-                        Write-Error -Exception $Exception -ErrorAction Stop
-                    }
+                default {
+                    Write-Error -Exception $Exception -ErrorAction Stop
                 }
             }
-
-            ([ActionPreference]::Stop) {
-                Write-Error -Exception $Exception -ErrorAction Stop
-            }
+        } else {
+            Write-Error -Exception $Exception -ErrorAction $ErrorActionPreference
         }
 
         return $false
