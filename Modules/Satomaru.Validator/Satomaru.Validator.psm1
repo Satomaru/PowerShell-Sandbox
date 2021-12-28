@@ -1,9 +1,5 @@
 using namespace System.Management.Automation
 
-[string] $Script:FileNamePattern = [System.IO.Path]::GetInvalidFileNameChars() -join "" | ForEach-Object {
-    "^[^{0}]+$" -f [regex]::Escape($_)
-}
-
 class ValidateDirectory : ValidateEnumeratedArgumentsAttribute {
     [void] ValidateElement([object] $Element) {
         [string] $Actual = $Element
@@ -11,7 +7,7 @@ class ValidateDirectory : ValidateEnumeratedArgumentsAttribute {
         try {
             if ($Actual) {
                 if (-not (Test-Path -LiteralPath $Actual -PathType Container)) {
-                    throw [System.ArgumentException]::new("ディレクトリが存在しません。: $Actual")
+                    throw [System.ArgumentException]::new("ディレクトリが存在しません。: $Element")
                 }
             }
         } catch {
@@ -22,12 +18,16 @@ class ValidateDirectory : ValidateEnumeratedArgumentsAttribute {
 
 class ValidateFileName : ValidateEnumeratedArgumentsAttribute {
     [void] ValidateElement([object] $Element) {
-        [string] $Actual = $Element
+        [char[]] $Actual = $Element
 
         try {
             if ($Actual) {
-                if ($Actual -notmatch $Script:FileNamePattern) {
-                    throw [System.ArgumentException]::new("ファイル名に不正な文字が使用されています。: $Actual")
+                [char[]] $Invalids = [System.IO.Path]::GetInvalidFileNameChars()
+
+                foreach ($Char in $Actual) {
+                    if ($Char -in $Invalids) {
+                        throw [System.ArgumentException]::new("ファイル名に不正な文字が使用されています。: $Element")
+                    }
                 }
             }
         } catch {
