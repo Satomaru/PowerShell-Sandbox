@@ -1,9 +1,9 @@
 @{
-    RootModule = 'Satomaru.Action.psm1'
+    RootModule = 'Satomaru.Form.psm1'
     ModuleVersion = '0.0.1.0'
     Author = 'Satomaru'
     PowerShellVersion = '7.2'
     RequiredAssemblies = @('System.Windows.Forms.dll')
     RequiredModules = @('Satomaru.Util')
-    FunctionsToExport = @('Show-Warning', 'Show-Exception')
+    FunctionsToExport = @('Show-MessageBox', "Show-Warning", "Show-Exception")
 }

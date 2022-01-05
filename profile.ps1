@@ -3,14 +3,14 @@ function prompt {
 }
 
 function rma {
-    Get-Module -Name "Satomaru.*" | Remove-Module -Force -Verbose
     Clear-Host
+    Get-Module -Name "Satomaru.*" | Remove-Module -Force -Verbose
     Get-Module
 }
 
 function ima {
-    Get-ChildItem -Path .\Modules -Directory | Import-Module -Force -Verbose
     Clear-Host
+    Get-ChildItem -Path .\Modules -Directory | Import-Module -Force -Verbose
     Get-Module
 }
 

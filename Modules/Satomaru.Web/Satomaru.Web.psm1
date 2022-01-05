@@ -211,6 +211,7 @@ function Search-CssEncoding {
     .\index.html が作成される。既に存在する場合は、例外が発生して処理が停止する。
 #>
 function Save-WebResponse {
+    [CmdletBinding()]
     [OutputType([hashtable])]
 
     Param(
@@ -253,10 +254,7 @@ function Save-WebResponse {
 
         if (-not $Overwrite) {
             if (Test-Path -LiteralPath $Info.FileName) {
-                Show-Warning  `
-                    -Message "同名のファイルが既に存在しています。: $($Info.FileName)" `
-                    -Title "Save-WebResponse" `
-                    -WarningAction $WarningPreference
+                Show-Warning -Warning "同名のファイルが既に存在しています。: $($Info.FileName)" -WarningAction $WarningPreference
             }
         }
 
@@ -280,11 +278,7 @@ function Save-WebResponse {
                 $Info.Done = $true
             } catch {
                 $Info.Exception = $_.Exception
-
-                $Retry = Show-Exception -CanRetry `
-                    -Exception $_.Exception `
-                    -Title "Save-WebResponse" `
-                    -ErrorAction $ErrorActionPreference
+                $Retry = (Show-Exception -Exception $_.Exception -CanRetry -ErrorAction $ErrorActionPreference) -eq "Retry"
             }
         } while ($Retry)
 
