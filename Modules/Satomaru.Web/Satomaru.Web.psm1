@@ -216,8 +216,8 @@ function Save-WebResponse {
 
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [WebResponseObject] $Response,
-        [string] [ValidateNotNullOrEmpty()] [ValidateFileName()] $BaseName = "response{n}",
-        [string] [ValidateNotNullOrEmpty()] [ValidateDirectory()] $Directory = ".",
+        [ValidateNotNullOrEmpty()] [ValidateFileName()] [string] $BaseName = "response{n}",
+        [ValidateNotNullOrEmpty()] [ValidateDirectory()] [string] $Directory = ".",
         [switch] $NamingFromUri,
         [switch] $Overwrite
     )
