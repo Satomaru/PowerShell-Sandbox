@@ -260,7 +260,7 @@ function Save-WebResponse {
 
                 return $Info
             } catch {
-                $Retry = Confirm-Exception -Exception $_.Exception
+                $Retry = Confirm-Exception -Exception $_.Exception -ErrorAction $ErrorActionPreference
             }
         } while ($Retry)
     }
