@@ -196,14 +196,14 @@ function Search-CssEncoding {
     - Encoding:    テキストとして保存した場合は、使用したエンコード
 
     .EXAMPLE
-    Invoke-WebRequest "https://placeimg.com/800/600/any.jpg" | Save-WebResponse -Directory work -NamingFromUri -Overwrite
+    Invoke-WebRequest "https://placeimg.com/800/600/any.jpg" | Save-WebResponse -Directory work -NamingFromUri -Confirm
 
-    .\work\any.jpg が作成される。既に存在する場合は上書きされる。
+    .\work\any.jpg が作成されるが、作成前に確認のプロンプトが表示される。
 
     .EXAMPLE
-    Invoke-WebRequest google.com | Save-WebResponse -BaseName index -Directory work -ErrorAction Stop
+    Invoke-WebRequest google.com | Save-WebResponse -BaseName index -ErrorAction Ignore
 
-    .\index.html が作成される。既に存在する場合は、例外が発生して処理が停止する。
+    .\index.html が作成される。作成に失敗した場合、例外を出さずに終了する。
 #>
 function Save-WebResponse {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact="Low")]
