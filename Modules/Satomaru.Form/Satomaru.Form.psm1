@@ -16,34 +16,60 @@ function Show-MessageBox {
     }
 }
 
+function Read-Option {
+    [OutputType([String])]
+
+    Param(
+        [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string[]] $Options,
+        [String[]] $Prompt
+    )
+
+    Process {
+        do {
+            [string] $Answer = Read-Host -Prompt ($Prompt | Out-String).Trim("`r","`n")
+
+            if ($Answer -in $Options) {
+                return $Answer
+            }
+        } while ($true)
+    }
+}
+
 function Confirm-Exception {
     [CmdletBinding()]
     [OutputType([boolean])]
 
     Param(
         [Parameter(Mandatory)] [System.Exception] $Exception,
-        [switch] $Retriable
+        [switch] $Gui
     )
 
     Process {
-        [ActionPreference] $Action = $ErrorActionPreference
+        if ($ErrorActionPreference -eq [ActionPreference]::Continue) {
+            if ($Gui) {
+                [hashtable] $MessageBox = @{
+                    Message = $Exception.Message,"Do you want to retry?"
+                    Title = "Exception"
+                    Buttons = [MessageBoxButtons]::RetryCancel
+                    Icon = [MessageBoxIcon]::Error
+                }
 
-        if ($Action -in @([ActionPreference]::Continue, [ActionPreference]::Inquire)) {
-            [DialogResult] $Result = if ($Retriable) {
-                Show-MessageBox -Message $Exception.Message,"再試行しますか？" -Title "例外" -Buttons AbortRetryIgnore -Icon Error
+                if ((Show-MessageBox @MessageBox) -eq [DialogResult]::Retry) {
+                    return $true
+                }
             } else {
-                Show-MessageBox -Message $Exception.Message,"続行しますか？" -Title "例外" -Buttons OKCancel -Icon Error
-            }
+                [hashtable] $Option = @{
+                    Options = "R","C"
+                    Prompt = $Exception.Message,"[R]etry or [C]ancel?"
+                }
 
-            $Action = switch ($Result) {
-                ([DialogResult]::Abort)  { [ActionPreference]::Stop }
-                ([DialogResult]::Cancel) { [ActionPreference]::Stop }
-                ([DialogResult]::Retry)  { return $true }
-                default                  { [ActionPreference]::Continue }
+                if ((Read-Option @Option) -eq "R") {
+                    return $true
+                }
             }
         }
 
-        Write-Error -Exception $Exception -ErrorAction $Action
+        Write-Error -Exception $Exception -ErrorAction $ErrorActionPreference
         return $false
     }
 }
