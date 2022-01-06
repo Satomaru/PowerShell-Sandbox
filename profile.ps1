@@ -1,5 +1,5 @@
 function prompt {
-    Get-Location | Split-Path -Leaf | ForEach-Object { $_ + "> "}
+    Get-Location | Split-Path -Leaf | ForEach-Object { $_ + (">" * ($NestedPromptLevel + 1)) + " " }
 }
 
 function rma {

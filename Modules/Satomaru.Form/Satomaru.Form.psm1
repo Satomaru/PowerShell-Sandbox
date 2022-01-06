@@ -2,7 +2,7 @@ using namespace System.Management.Automation
 using namespace System.Windows.Forms
 
 function Show-MessageBox {
-    [OutputType([string])]
+    [OutputType([System.Windows.Forms.DialogResult])]
 
     Param(
         [String[]] $Message,
@@ -16,69 +16,34 @@ function Show-MessageBox {
     }
 }
 
-function Show-Warning {
+function Confirm-Exception {
     [CmdletBinding()]
-    [OutputType([void])]
-
-    Param(
-        [String] $Warning
-    )
-
-    Process {
-        [ActionPreference] $Action = $WarningPreference
-
-        if ($Action -eq [ActionPreference]::Inquire) {
-            [hashtable] $MessageBox = @{
-                Message = @($Warning, "続行しますか？")
-                Title = "警告"
-                Buttons = [MessageBoxButtons]::OKCancel
-                Icon = [MessageBoxIcon]::Warning
-            }
-
-            [string] $Result = Show-MessageBox @MessageBox
-            $Action = ($Result -eq "OK") ? [ActionPreference]::Continue : [ActionPreference]::Stop
-        }
-
-        Write-Warning -Message $Warning -WarningAction $Action
-    }
-}
-
-function Show-Exception {
-    [CmdletBinding()]
-    [OutputType([string])]
+    [OutputType([boolean])]
 
     Param(
         [Parameter(Mandatory)] [System.Exception] $Exception,
-        [switch] $CanRetry
+        [switch] $Retriable
     )
 
     Process {
         [ActionPreference] $Action = $ErrorActionPreference
 
-        if ($Action -eq [ActionPreference]::Inquire) {
-            [string] $Prompt = $CanRetry ? "再試行しますか？" : "続行しますか？"
-
-            [hashtable] $MessageBox = @{
-                Message = @($Exception.Message, $Prompt)
-                Title = "例外"
-                Buttons = $CanRetry ? [MessageBoxButtons]::AbortRetryIgnore : [MessageBoxButtons]::OKCancel
-                Icon = [MessageBoxIcon]::Error
+        if ($Action -in @([ActionPreference]::Continue, [ActionPreference]::Inquire)) {
+            [DialogResult] $Result = if ($Retriable) {
+                Show-MessageBox -Message $Exception.Message,"再試行しますか？" -Title "例外" -Buttons AbortRetryIgnore -Icon Error
+            } else {
+                Show-MessageBox -Message $Exception.Message,"続行しますか？" -Title "例外" -Buttons OKCancel -Icon Error
             }
 
-            [string] $Result = Show-MessageBox @MessageBox
-
             $Action = switch ($Result) {
-                "Abort"  { [ActionPreference]::Stop }
-                "Cancel" { [ActionPreference]::Stop }
-                "Ignore" { [ActionPreference]::Ignore }
-                default  { [ActionPreference]::Continue }
+                ([DialogResult]::Abort)  { [ActionPreference]::Stop }
+                ([DialogResult]::Cancel) { [ActionPreference]::Stop }
+                ([DialogResult]::Retry)  { return $true }
+                default                  { [ActionPreference]::Continue }
             }
         }
 
         Write-Error -Exception $Exception -ErrorAction $Action
-
-        if ($CanRetry) {
-            return $Result
-        }
+        return $false
     }
 }

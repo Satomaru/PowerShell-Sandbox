@@ -182,9 +182,6 @@ function Search-CssEncoding {
     リクエストURIが末端 (Leaf) でない場合は、BaseName が使用される。
     また、リクエストURIが拡張子を持たない、またはコンテントタイプにふさわしくない拡張子の場合は、
     コンテントタイプにふさわしい拡張子が代わりに使用される。
-    
-    .PARAMETER Overwrite
-    指定すると、ファイルが既に存在する場合は上書きされる。
 
     .INPUTS
     保存するWebレスポンス。
@@ -192,13 +189,11 @@ function Search-CssEncoding {
     .OUTPUTS
     保存情報。
 
-    - Done:        保存した場合は $false
     - RequestUri:  リクエストURI
     - ContentType: Content-Type ヘッダー
     - FileName:    保存したファイル名
     - AsText:      テキストとして保存した場合は $true
     - Encoding:    テキストとして保存した場合は、使用したエンコード
-    - Exception:   保存時に発生した例外
 
     .EXAMPLE
     Invoke-WebRequest "https://placeimg.com/800/600/any.jpg" | Save-WebResponse -Directory work -NamingFromUri -Overwrite
@@ -211,15 +206,14 @@ function Search-CssEncoding {
     .\index.html が作成される。既に存在する場合は、例外が発生して処理が停止する。
 #>
 function Save-WebResponse {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact="Low")]
     [OutputType([hashtable])]
 
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [WebResponseObject] $Response,
         [ValidateNotNullOrEmpty()] [ValidateFileName()] [string] $BaseName = "response{n}",
         [ValidateNotNullOrEmpty()] [ValidateDirectory()] [string] $Directory = ".",
-        [switch] $NamingFromUri,
-        [switch] $Overwrite
+        [switch] $NamingFromUri
     )
 
     Begin {
@@ -231,13 +225,11 @@ function Save-WebResponse {
         [hashtable] $ContentSpec = $Response | Get-ContentSpec
 
         [hashtable] $Info = @{
-            Done = $false
             RequestUri = $ContentSpec.RequestUri
             ContentType = $ContentSpec.ContentTypeHeader
             FileName = ""
             AsText = $ContentSpec.AsText
             Encoding = $Response | Resolve-Encoding
-            Exception = $null
         }
 
         $Info.FileName = if ($NamingFromUri) {
@@ -252,17 +244,8 @@ function Save-WebResponse {
 
         $Info.FileName = [System.IO.Path]::Combine($Directory, $Info.FileName)
 
-        if (-not $Overwrite) {
-            if (Test-Path -LiteralPath $Info.FileName) {
-                Show-Warning -Warning "同名のファイルが既に存在しています。: $($Info.FileName)" -WarningAction $WarningPreference
-            }
-        }
-
-        [boolean] $Retry = $false
-
         do {
-            $Retry = $false
-            $Info.Exception = $null
+            [boolean] $Retry = $false
 
             try {
                 if ($Info.AsText) {
@@ -274,14 +257,11 @@ function Save-WebResponse {
                     $Response.Content `
                         | Set-Content -Path $Info.FileName -AsByteStream -ErrorAction Stop
                 }
-    
-                $Info.Done = $true
+
+                return $Info
             } catch {
-                $Info.Exception = $_.Exception
-                $Retry = (Show-Exception -Exception $_.Exception -CanRetry -ErrorAction $ErrorActionPreference) -eq "Retry"
+                $Retry = Confirm-Exception -Exception $_.Exception -Retriable
             }
         } while ($Retry)
-
-        return $Info
     }
 }

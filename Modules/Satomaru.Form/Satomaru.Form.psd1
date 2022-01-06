@@ -5,5 +5,5 @@
     PowerShellVersion = '7.2'
     RequiredAssemblies = @('System.Windows.Forms.dll')
     RequiredModules = @('Satomaru.Util')
-    FunctionsToExport = @('Show-MessageBox', "Show-Warning", "Show-Exception")
+    FunctionsToExport = @('Confirm-Exception', 'Show-MessageBox')
 }
