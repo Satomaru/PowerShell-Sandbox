@@ -1,5 +1,4 @@
 # PowerShell-Sandbox
-
 ここは、私、さとまるが **PowerShell v7.2** を勉強するための砂場です。
 
 PowerShellの演習で作成したコードを置いているほか、
