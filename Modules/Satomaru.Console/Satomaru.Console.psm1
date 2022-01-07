@@ -54,13 +54,13 @@ function Show-MessageBox {
     コンソールから選択肢の入力を待ち受けます。
 
     .DESCRIPTION
-    待ち受けメッセージを表示して、予め決めている選択肢の入力を待ち受けます。
-    選択肢は待ち受けメッセージで明示するようにしてください。
+    待ち受けメッセージと予め決めている選択肢を表示して、入力を待ち受けます。
     予め決めている選択肢以外を入力された場合は、
     再度待ち受けメッセージを表示して入力を待ち受けます。
     
     .PARAMETER Options
-    予め決めている選択肢の配列。大文字／小文字は区別しません。
+    予め決めている選択肢。大文字／小文字は区別しません。
+    OrderedDictionaryのキーが選択肢、値が表示名となります。
     
     .PARAMETER Prompt
     待ち受けメッセージの配列。
@@ -74,25 +74,28 @@ function Show-MessageBox {
     入力された選択肢。
 
     .EXAMPLE
-    Read-Option -Options "R","C" -Prompt "処理に失敗しました。","[R]再試行 [C]キャンセル"
+    Read-Option -Options ([ordered]@{R="再試行"; C="キャンセル"}) -Prompt "処理に失敗しました。"
     
-    "R"または"C"を待ち受ける。
+    「処理に失敗しました。」
+    「[R]再試行, [C]キャンセル: 」
+    という待ち受けメッセージを表示して、"R"または"C"を待ち受けます。
 #>
 function Read-Option {
     [OutputType([String])]
 
     Param(
-        [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string[]] $Options,
+        [Parameter(Mandatory)] [System.Collections.Specialized.OrderedDictionary] $Options,
         [String[]] $Prompt
     )
 
     Process {
         do {
+            $Prompt += ($Options.GetEnumerator() | ForEach-Object { "[{0}]{1}" -f $_.Key,$_.Value }) -join ", "
             [string] $Answer = Read-Host -Prompt ($Prompt | Out-String).Trim("`r","`n")
 
-            foreach ($Option in $Options) {
-                if ($Answer -eq $Option) {
-                    return $Option
+            foreach ($Key in $Options.Keys) {
+                if ($Answer -eq $Key) {
+                    return $Key
                 }
             }
         } while ($true)
@@ -158,8 +161,8 @@ function Confirm-Exception {
                 }
             } else {
                 [hashtable] $Option = @{
-                    Options = "R","C"
-                    Prompt = $Exception.Message,"[R]etry or [C]ancel?"
+                    Options = [ordered] @{ R = "etry"; C = "ancel" }
+                    Prompt = $Exception.Message
                 }
 
                 if ((Read-Option @Option) -eq "R") {
