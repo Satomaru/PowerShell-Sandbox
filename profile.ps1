@@ -14,13 +14,5 @@ function ima {
     Get-Module
 }
 
-function import([string] $SubName) {
-    Import-Module -Name "Satomaru.$SubName" -Force -Verbose
-}
-
-function help([string] $Command) {
-    Get-Help -Name $Command -Full
-}
-
 Set-Location ~\OneDrive\ドキュメント\PowerShell
 Get-Location
