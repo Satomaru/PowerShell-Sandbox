@@ -1,5 +1,6 @@
 using namespace System.Management.Automation
 
+# 引数が存在するディレクトリのパスであることを検証します。
 class ValidateDirectory : ValidateEnumeratedArgumentsAttribute {
     [void] ValidateElement([object] $Element) {
         [string] $Actual = $Element
@@ -16,6 +17,7 @@ class ValidateDirectory : ValidateEnumeratedArgumentsAttribute {
     }
 }
 
+# 引数がファイル名として妥当であることを検証します。
 class ValidateFileName : ValidateEnumeratedArgumentsAttribute {
     [void] ValidateElement([object] $Element) {
         [char[]] $Actual = $Element
