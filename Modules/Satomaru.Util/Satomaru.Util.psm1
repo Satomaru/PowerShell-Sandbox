@@ -47,8 +47,7 @@
     オブジェクト。
 
     .OUTPUTS
-    object
-    期待する条件に一致する場合は、入力されたオブジェクト。
+    [object] 期待する条件に一致する場合は、入力されたオブジェクト。
 
     .EXAMPLE
     1..5 | Find-Object -GE 2 -LE 4
@@ -111,7 +110,7 @@ function Find-Object {
     最適化する文字列。
 
     .OUTPUTS
-    最適化された文字列。
+    [string] 最適化された文字列。
 
     .EXAMPLE
     " 'foo ' " | Optimize-String
@@ -167,7 +166,7 @@ function Optimize-String {
     パラメータ文字列。
 
     .OUTPUTS
-    分割されたパーツの配列。
+    [string[]] 分割されたパーツの配列。
 
     .EXAMPLE
     [string[]] $Parts = "text/html; charset=UTF-8" | Split-Parameter -Values ([ref] $Values)
@@ -218,8 +217,7 @@ function Split-Parameter {
     なし。
 
     .OUTPUTS
-    boolean
-    配列の長さ、および各要素の値が等しい場合は$true。
+    [boolean] 配列の長さ、および各要素の値が等しい場合は$true。
 
     .EXAMPLE
     Test-Array -Actual ([ref] $foo) -Expected ([ref] $bar)

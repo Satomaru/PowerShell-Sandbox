@@ -35,8 +35,7 @@
     ファイル。
 
     .OUTPUTS
-    System.IO.FileInfo
-    期待する条件に一致する場合は、入力されたファイル。
+    [System.IO.FileInfo] 期待する条件に一致する場合は、入力されたファイル。
 
     .EXAMPLE
     Get-ChildItem -File -Recurse | Find-Item -Extension .txt,.md -LargerThan 5000
@@ -86,8 +85,7 @@ function Find-Item {
     テキストファイル。
 
     .OUTPUTS
-    System.IO.FileInfo
-    期待する条件に一致する場合は、入力されたファイル。
+    [System.IO.FileInfo] 期待する条件に一致する場合は、入力されたテキストファイル。
 
     .EXAMPLE
     Get-ChildItem -File -Recurse | Find-TextItem -ContentMatch あいうえお
@@ -132,7 +130,7 @@ function Find-TextItem {
     JIS、EUC-JP、SHIFT-JIS、UTF-8のいずれかのテキストファイル。
 
     .OUTPUTS
-    テキストファイルの内容。
+    [string] テキストファイルの内容。
 
     .EXAMPLE
     Get-Item -Path .\sample-*.txt | Get-TextContent

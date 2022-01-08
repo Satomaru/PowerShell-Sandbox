@@ -26,8 +26,7 @@ using namespace System.Windows.Forms
     なし。
 
     .OUTPUTS
-    System.Windows.Forms.DialogResult
-    クリックされたボタン。
+    [System.Windows.Forms.DialogResult] クリックされたボタン。
 
     .EXAMPLE
     Show-MessageBox -Message "以下のファイルを更新します。",".\work\foo.txt" -Title "確認" -Buttons OKCancel -Icon Question
@@ -70,8 +69,7 @@ function Show-MessageBox {
     なし。
 
     .OUTPUTS
-    string
-    入力された選択肢。
+    [string] 入力された選択肢。
 
     .EXAMPLE
     Read-Option -Options ([ordered]@{R="再試行"; C="キャンセル"}) -Prompt "処理に失敗しました。"
@@ -128,8 +126,7 @@ function Read-Option {
     なし。
 
     .OUTPUTS
-    boolean
-    再試行が選択された場合は$true。
+    [boolean] 再試行が選択された場合は$true。
 
     .EXAMPLE
     Confirm-Exception -Exception $_.Exception
