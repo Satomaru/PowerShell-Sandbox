@@ -1,57 +1,60 @@
 <#
     .SYNOPSIS
-    項目を抽出する。
+    ファイルを抽出します。
 
     .DESCRIPTION
-    項目（ファイルやフォルダ）を受け取って検査を行う。
-    検査に合格した場合は、受け取った項目をそのまま返却する。
+    ファイルを受け取り、 期待する条件に一致することを検査します。
+    期待する条件に一致する場合は、そのまま返却します。
 
     .PARAMETER Item
-    検査する項目。
+    ファイル。
 
     .PARAMETER ReadOnly
-    読み取り専用であることを期待する。
+    読み取り専用であることを期待します。
 
     .PARAMETER Extension
-    指定した拡張子であることを検査する。
-    拡張子はドット "." で開始する。また、カンマ "," で区切って複数指定することができる。
+    指定した拡張子であることを期待します。
+    拡張子はドット "." で開始します。
 
     .PARAMETER UpdateBefore
-    最終更新日時が指定した値よりも過去であることを検査する。
+    最終更新日時が、指定した値以前であることを期待します。
 
     .PARAMETER UpdateAfter
-    最終更新日時が指定した値よりも未来であることを検査する。
+    最終更新日時が、指定した値以降であることを期待します。
 
     .PARAMETER SmallerThan
-    ファイルサイズが指定した値よりも小さいことを検査する。
+    ファイルサイズが、指定した値以下であることを期待します。
 
     .PARAMETER LargerThan
-    ファイルサイズが指定した値よりも大きいことを検査する。
+    ファイルサイズが、指定した値以上であることを期待します。
 
     .PARAMETER NameMatch
-    名前が指定した正規表現に一致することを検査する。
+    名前が、指定した正規表現に一致することを期待します。
 
     .INPUTS
-    検査する項目。
+    ファイル。
 
     .OUTPUTS
-    検査に合格した場合は、検査した項目。
+    System.IO.FileInfo
+    期待する条件に一致する場合は、入力されたファイル。
 
     .EXAMPLE
-    Get-ChildItem -File -Recurse | Find-Item -Extension .txt, .md -LargerThan 5000
-    拡張子が .txt または .md で、ファイルサイズが 5,000 byte より大きいファイルを抽出する。
+    Get-ChildItem -File -Recurse | Find-Item -Extension .txt,.md -LargerThan 5000
+
+    拡張子が.txtまたは.mdで、
+    ファイルサイズが5,000byte以上のファイルを抽出します。
 #>
 function Find-Item {
-    [OutputType([System.IO.FileSystemInfo])]
+    [OutputType([System.IO.FileInfo])]
 
     Param(
-        [Parameter(Mandatory, ValueFromPipeline)] [System.IO.FileSystemInfo] $Item,
+        [Parameter(Mandatory, ValueFromPipeline)] [System.IO.FileInfo] $Item,
         [switch] $ReadOnly,
         [string[]] $Extension,
         [datetime] $UpdateBefore,
         [datetime] $UpdateAfter,
-        [object] $SmallerThan,
-        [object] $LargerThan,
+        [nullable[uint]] $SmallerThan,
+        [nullable[uint]] $LargerThan,
         [regex] $NameMatch
     )
 
@@ -59,41 +62,43 @@ function Find-Item {
         return $Item `
             | Find-Object -Property IsReadOnly -EQ $ReadOnly `
             | Find-Object -Property Extension -Contains $Extension `
-            | Find-Object -Property LastWriteTime -LT $UpdateBefore -GT $UpdateAfter `
-            | Find-Object -Property Length -LT $SmallerThan -GT $LargerThan `
+            | Find-Object -Property LastWriteTime -LE $UpdateBefore -GE $UpdateAfter `
+            | Find-Object -Property Length -LE $SmallerThan -GE $LargerThan `
             | Find-Object -Property Name -Match $NameMatch
     }
 }
 
 <#
     .SYNOPSIS
-    テキストファイルを抽出する。
+    テキストファイルを抽出します。
 
     .DESCRIPTION
-    テキストファイルを受け取って検査を行う。
-    検査に合格した場合は、受け取ったテキストファイルをそのまま返却する。
+    テキストファイルを受け取り、 期待する条件に一致することを検査します。
+    期待する条件に一致する場合は、そのまま返却します。
 
     .PARAMETER Item
-    検査するテキストファイル。
+    テキストファイル。
 
     .PARAMETER ContentMatch
-    内容が指定した正規表現に一致することを検査する。
+    内容が、指定した正規表現に一致することを期待します。
 
     .INPUTS
-    検査するテキストファイル。
+    テキストファイル。
 
     .OUTPUTS
-    検査に合格した場合は、検査したテキストファイル。
+    System.IO.FileInfo
+    期待する条件に一致する場合は、入力されたファイル。
 
     .EXAMPLE
     Get-ChildItem -File -Recurse | Find-TextItem -ContentMatch あいうえお
-    内容に「あいうえお」が存在するテキストファイルを抽出する。
+
+    内容に「あいうえお」が存在するテキストファイルを抽出します。
 #>
 function Find-TextItem {
-    [OutputType([System.IO.FileSystemInfo])]
+    [OutputType([System.IO.FileInfo])]
 
     Param(
-        [Parameter(Mandatory, ValueFromPipeline)] [System.IO.FileSystemInfo] $Item,
+        [Parameter(Mandatory, ValueFromPipeline)] [System.IO.FileInfo] $Item,
         [regex] $ContentMatch
     )
 
@@ -117,11 +122,11 @@ function Find-TextItem {
 
 <#
     .SYNOPSIS
-    テキストファイルの内容を取得する。
+    テキストファイルの内容を取得します。
 
     .DESCRIPTION
-    JIS、EUC-JP、SHIFT-JIS、UTF-8のテキストファイルを読み込み、その内容を返却する。
-    上記以外のファイルは、正しく読むことができない。
+    JIS、EUC-JP、SHIFT-JIS、UTF-8のテキストファイルを読み込み、その内容を返却します。
+    上記以外のファイルは、正しく読むことができません。
 
     .INPUTS
     JIS、EUC-JP、SHIFT-JIS、UTF-8のいずれかのテキストファイル。
@@ -131,7 +136,8 @@ function Find-TextItem {
 
     .EXAMPLE
     Get-Item -Path .\sample-*.txt | Get-TextContent
-    sample-*.txtを読み込んで、その内容を表示する。
+
+    sample-*.txtを読み込みます。。
 #>
 function Get-TextContent {
     [OutputType([string])]
