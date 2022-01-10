@@ -135,7 +135,7 @@ function Find-TextItem {
     .EXAMPLE
     Get-Item -Path .\sample-*.txt | Get-TextContent
 
-    sample-*.txtを読み込みます。。
+    sample-*.txtを読み込みます。
 #>
 function Get-TextContent {
     [OutputType([string])]

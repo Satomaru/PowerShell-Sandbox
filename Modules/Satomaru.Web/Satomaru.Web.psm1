@@ -2,6 +2,12 @@
 using namespace System.Management.Automation
 using module Satomaru.Validator
 
+<#
+    コンテンツ仕様。
+        AsText:  テキストとして解釈できる場合は$true。
+        AnyExts: どんな拡張子でも許容できる場合は$true。
+        Exts:    このコンテンツに妥当である拡張子。
+#>
 [hashtable] $Script:ContentSpecs = @{
     "*/*"                          = @{ AsText = $false; AnyExts = $true;  Exts = @(".dat") }
     "application/gzip"             = @{ AsText = $false; AnyExts = $false; Exts = @(".gz") }
@@ -30,6 +36,30 @@ using module Satomaru.Validator
     "video/x-msvideo"              = @{ AsText = $false; AnyExts = $false; Exts = @(".avi") }
 }
 
+<#
+    .SYNOPSIS
+    コンテンツ仕様を取得します。
+
+    .DESCRIPTION
+    Webレスポンスを受け取り、ヘッダーからコンテンツ仕様を解釈します。
+
+    .PARAMETER Response
+    Webレスポンス。
+
+    .INPUTS
+    Webレスポンス。
+
+    .OUTPUTS
+    [hashtable] コンテンツ仕様。
+        RequestUri:            リクエストURI。
+        ContentLocationHeader: Content-Locationヘッダーの値。
+        ContentTypeHeader:     Content-Typeヘッダーの値。
+        Type:                  コンテント・タイプ
+        AsText:                テキストとして解釈できる場合は$true。
+        Charset:               文字セット（ヘッダーに記述があった場合のみ）
+        AnyExts:               このコンテンツがどんな拡張子でも許容できる場合は$true。
+        Exts:                  このコンテンツに妥当である拡張子。
+#>
 function Get-ContentSpec {
     [OutputType([hashtable])]
 
@@ -38,7 +68,7 @@ function Get-ContentSpec {
     )
 
     Process {
-        [string] $ContentTypeHeader = $Response.Headers["Content-Type"][0]
+        [string] $ContentTypeHeader = Get-FirstItem $Response.Headers["Content-Type"]
         [hashtable] $Values = @{}
         [string[]] $Parts = $ContentTypeHeader | Split-Parameter -Values ([ref] $Values)
 
@@ -54,6 +84,7 @@ function Get-ContentSpec {
 
         return @{
             RequestUri = $Response.BaseResponse.RequestMessage.RequestUri
+            ContentLocationHeader = Get-FirstItem $Response.Headers["Content-Location"]
             ContentTypeHeader = $ContentTypeHeader
             Type = $Parts[0]
             AsText = $Item.AsText
@@ -64,6 +95,31 @@ function Get-ContentSpec {
     }
 }
 
+<#
+    .SYNOPSIS
+    Webレスポンスからファイル名を解決します。
+
+    .DESCRIPTION
+    Content-Locationヘッダー、またはリクエストURIから、ファイル名を作成して返却します。
+
+    この時、拡張子がない、または拡張子がコンテント・タイプにふさわしくない場合は、
+    ふさわしい拡張子に取り替えます。
+
+    Content-Locationヘッダー、またはリクエストURIからベース名を作成できなかった場合は、
+    引数の空欄時ベース名を用います。
+
+    .PARAMETER Response
+    Webレスポンス。
+
+    .PARAMETER BaseNameWhenEmpty
+    空欄時ベース名。ベース名を作成できなかった場合に、ベース名として使用します。
+
+    .INPUTS
+    Webレスポンス。
+
+    .OUTPUTS
+    Webレスポンスから解決したファイル名。
+#>
 function Resolve-LocalName {
     [OutputType([string])]
 
@@ -74,13 +130,14 @@ function Resolve-LocalName {
 
     Process {
         [hashtable] $ContentSpec = $Response | Get-ContentSpec
-        [uri] $Uri = $Response.BaseResponse.RequestMessage.RequestUri
+        [string] $LocalPath = Optimize-Void $ContentSpec.ContentLocationHeader | Split-Path -Leaf
+        $LocalPath ??= $ContentSpec.RequestUri.LocalPath
 
-        if (-not $Uri.LocalPath) {
+        if (-not $LocalPath) {
             return $BaseNameWhenEmpty + $ContentSpec.Exts[0]
         }
 
-        [string] $FileName = [System.IO.Path]::GetFileName($Uri.LocalPath)
+        [string] $FileName = [System.IO.Path]::GetFileName($LocalPath)
 
         if (-not $FileName) {
             return $BaseNameWhenEmpty + $ContentSpec.Exts[0]
@@ -92,7 +149,7 @@ function Resolve-LocalName {
             return $FileInfo.BaseName + $ContentSpec.Exts[0]
         }
 
-        if ($ContentSpec.AnyExts -or $ContentSpec.Exts.Contains($FileInfo.Extension)) {
+        if ($ContentSpec.AnyExts -or $FileInfo.Extension -in $ContentSpec.Exts) {
             return $FileInfo.Name
         }
 
@@ -100,6 +157,24 @@ function Resolve-LocalName {
     }
 }
 
+<#
+    .SYNOPSIS
+    Webレスポンスからエンコーディングを解決します。
+
+    .DESCRIPTION
+    Content-Typeヘッダーに文字セットが記述されている場合は、そのエンコーディングを返却します。
+    記述されていない場合は、HTMLおよびCSSの時は、内容から判断します。
+    上記以外の場合は、Webレスポンスに格納されているエンコーディングをそのまま返します。
+
+    .PARAMETER Response
+    Webレスポンス。
+
+    .INPUTS
+    Webレスポンス。
+
+    .OUTPUTS
+    Webレスポンスから解決したエンコーディング。
+#>
 function Resolve-Encoding {
     [OutputType([System.Text.Encoding])]
 
@@ -122,6 +197,22 @@ function Resolve-Encoding {
     }
 }
 
+<#
+    .SYNOPSIS
+    HTMLの内容からエンコーディングを判断します。
+
+    .DESCRIPTION
+    meta要素を探し出して、指定されている文字セットに該当するエンコーディングを返却します。
+
+    .PARAMETER Response
+    Webレスポンス。
+
+    .INPUTS
+    Webレスポンス。
+
+    .OUTPUTS
+    HTMLの内容から判断されたエンコーディング。
+#>
 function Search-HtmlEncoding {
     [OutputType([System.Text.Encoding])]
 
@@ -138,10 +229,30 @@ function Search-HtmlEncoding {
                     return [System.Text.Encoding]::GetEncoding($Matches["charset"])
                 }
             }
+
+            if ($Element -match "meta\s+charset\s*=\s*[""']?(?<charset>[\w-]+)[""']?") {
+                return [System.Text.Encoding]::GetEncoding($Matches["charset"])
+            }
         }
     }
 }
 
+<#
+    .SYNOPSIS
+    CSSの内容からエンコーディングを判断します。
+
+    .DESCRIPTION
+    @charsetを探し出して、指定されている文字セットに該当するエンコーディングを返却します。
+
+    .PARAMETER Response
+    Webレスポンス。
+
+    .INPUTS
+    Webレスポンス。
+
+    .OUTPUTS
+    CSSの内容から判断されたエンコーディング。
+#>
 function Search-CssEncoding {
     [OutputType([System.Text.Encoding])]
 
@@ -160,50 +271,53 @@ function Search-CssEncoding {
 
 <#
     .SYNOPSIS
-    Webレスポンスを保存する。
+    Webレスポンスを保存します。
 
     .DESCRIPTION
-    Invoke-WebRequestの結果をファイルに保存する。
-    ファイル名は、Webレスポンスの内容から決定される。
-    テキストファイルの場合は、オリジナルの文字セットでエンコードされる。
+    Invoke-WebRequestの結果をファイルに保存します。
+    なお、テキストファイルの場合は、原則としてオリジナルの文字セットでエンコードされます。
     
     .PARAMETER Response
-    保存するWebレスポンス。
+    Webレスポンス。
     
     .PARAMETER BaseName
-    保存するファイル名のベース名に使用される。
-    なお "{n}" は、パイプラインのループ回数に置換される。
+    保存するファイルのベース名に使用されます。
+    "{n}"を記述した場合は、パイプラインで処理されるごとに、1,2,3...と置換されます。
+
+    なお、Namingパラメータが指定された場合は、
+    まず、Webレスポンスから適切なファイル名を作成することを試みます。
+    適切なファイル名が作成できなかった場合は、このパラメータが使用されます。
     
     .PARAMETER Directory
-    ファイルを保存するディレクトリを指定する。
+    ファイルを保存するディレクトリ。
     
-    .PARAMETER NamingFromUri
-    指定すると、リクエストURIからファイル名が作成される。
-    リクエストURIが末端 (Leaf) でない場合は、BaseName が使用される。
-    また、リクエストURIが拡張子を持たない、またはコンテントタイプにふさわしくない拡張子の場合は、
-    コンテントタイプにふさわしい拡張子が代わりに使用される。
+    .PARAMETER Naming
+    Webレスポンスから適切なファイル名を作成することを試みます。
+    Content-LocationヘッダーやリクエストURIなどからファイル名を作成しますが、
+    作成できなかった場合は、BaseNameパラメータが使用されます。
 
     .INPUTS
-    保存するWebレスポンス。
+    Webレスポンス。
 
     .OUTPUTS
-    保存情報。
-
-    - RequestUri:  リクエストURI
-    - ContentType: Content-Type ヘッダー
-    - FileName:    保存したファイル名
-    - AsText:      テキストとして保存した場合は $true
-    - Encoding:    テキストとして保存した場合は、使用したエンコード
+    [hashtable] 保存情報。
+        RequestUri:  リクエストURI
+        ContentType: Content-Type ヘッダー
+        FileName:    保存したファイル名
+        AsText:      テキストとして保存した場合は $true
+        Encoding:    テキストとして保存した場合は、使用したエンコード
 
     .EXAMPLE
-    Invoke-WebRequest "https://placeimg.com/800/600/any.jpg" | Save-WebResponse -Directory work -NamingFromUri -Confirm
+    Invoke-WebRequest "https://placeimg.com/800/600/any.jpg" | Save-WebResponse -Directory work -Naming -Confirm
 
-    .\work\any.jpg が作成されるが、作成前に確認のプロンプトが表示される。
+    .\work\any.jpg が作成されます。
+    なお、作成前に確認のプロンプトが表示されます。
 
     .EXAMPLE
     Invoke-WebRequest google.com | Save-WebResponse -BaseName index -ErrorAction Ignore
 
-    .\index.html が作成される。作成に失敗した場合、例外を出さずに終了する。
+    .\index.html が作成されます。
+    作成に失敗した場合は、例外を出さずに終了します。
 #>
 function Save-WebResponse {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact="Low")]
@@ -213,7 +327,7 @@ function Save-WebResponse {
         [Parameter(Mandatory, ValueFromPipeline)] [WebResponseObject] $Response,
         [ValidateNotNullOrEmpty()] [ValidateFileName()] [string] $BaseName = "response{n}",
         [ValidateNotNullOrEmpty()] [ValidateDirectory()] [string] $Directory = ".",
-        [switch] $NamingFromUri
+        [switch] $Naming
     )
 
     Begin {
@@ -232,7 +346,7 @@ function Save-WebResponse {
             Encoding = $Response | Resolve-Encoding
         }
 
-        $Info.FileName = if ($NamingFromUri) {
+        $Info.FileName = if ($Naming) {
             $Response | Resolve-LocalName -BaseNameWhenEmpty $BaseName
         } else {
             $BaseName + $ContentSpec.Exts[0]

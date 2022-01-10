@@ -50,6 +50,62 @@ function Show-MessageBox {
 
 <#
     .SYNOPSIS
+    コンソールから配列の選択を待ち受けます。
+
+    .DESCRIPTION
+    コンソールに配列の要素を全て表示した後、要素番号を待ち受けます。
+    正しい要素番号が入力された時は、その要素を返却します。
+    
+    .PARAMETER Array
+    配列。
+    
+    .PARAMETER Prompt
+    待ち受けメッセージの配列。
+    配列の各要素の終わりで改行して表示します。
+    
+    .INPUTS
+    なし。
+
+    .OUTPUTS
+    [object] 選択された要素。
+
+    .EXAMPLE
+    Read-ArrayItem @('foo', 'bar', 'baz')
+    
+    「  0 : foo」
+    「  1 : bar」
+    「  2 : baz」
+    「Input Number: 」
+    という待ち受けメッセージを表示して、0..2を待ち受けます。
+#>
+function Read-ArrayItem {
+    [OutputType([object])]
+
+    Param(
+        [Parameter(Mandatory)] [ValidateNotNull()] [object[]] $Array,
+        [String[]] $Prompt = "Input Number"
+    )
+
+    Process {
+        for ([int] $Index = 0; $Index -lt $Array.Length; $Index++) {
+            Write-Host ("{0,2}" -f $Index) : ($Array[$Index])
+        }
+
+        Write-Host
+        [string] $Choose = Read-Host ($Prompt | Out-String).Trim("`r","`n")
+
+        if ($Choose -match "^\d+$") {
+            [int] $Index = $Choose
+
+            if ($index -lt $Array.Length) {
+                return $Array[$Index]
+            }
+        }
+    }
+}
+
+<#
+    .SYNOPSIS
     コンソールから選択肢の入力を待ち受けます。
 
     .DESCRIPTION

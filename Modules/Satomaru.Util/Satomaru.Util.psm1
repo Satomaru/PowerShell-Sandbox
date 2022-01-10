@@ -9,6 +9,9 @@
     .PARAMETER Target
     オブジェクト。
 
+    .PARAMETER Limit
+    抽出するオブジェクトの最大個数。
+
     .PARAMETER Property
     オブジェクトの検査対象となるプロパティ名。
     指定しなかった場合は、オブジェクトそのものが検査されます。
@@ -50,20 +53,21 @@
     [object] 期待する条件に一致する場合は、入力されたオブジェクト。
 
     .EXAMPLE
-    1..5 | Find-Object -GE 2 -LE 4
+    1..10 | Find-Object -Limit 3 -GE 4
 
-    2, 3, 4 が抽出される。
+    4, 5, 6が抽出されます。
 
     .EXAMPLE
-    Get-Item *.txt | Find-Object -Property Length -LE 70
+    Get-Item *.txt | Find-Object -Property Length -LE 60
 
-    ファイルサイズが 70 byte 以下の *.txt が抽出される。
+    ファイルサイズが70byte以下の*.txtが抽出されます。
 #>
 function Find-Object {
     [OutputType([object])]
 
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [object] $Target,
+        [nullable[int]] $Limit,
         [string] $Property,
         [switch] $Truthy,
         [switch] $Falsy,
@@ -77,20 +81,71 @@ function Find-Object {
         [regex] $Match
     )
 
+    Begin {
+        [int] $Count = 0
+    }
+
     Process {
-        return $Target `
-            | ForEach-Object { $Property ? $_.$Property : $_ } `
-            | Where-Object { -not $Truthy -or $_ } `
-            | Where-Object { -not $Falsy -or -not $_ } `
-            | Where-Object { $null -eq $EQ -or $_ -eq $EQ } `
-            | Where-Object { $null -eq $NE -or $_ -ne $NE } `
-            | Where-Object { $null -eq $LT -or $_ -lt $LT } `
-            | Where-Object { $null -eq $LE -or $_ -le $LE } `
-            | Where-Object { $null -eq $GT -or $_ -gt $GT } `
-            | Where-Object { $null -eq $GE -or $_ -ge $GE } `
-            | Where-Object { -not $Contains -or $_ -in $Contains } `
-            | Where-Object { -not $Match -or $_ -match $Match } `
-            | ForEach-Object { $Target }
+        if ($null -eq $Limit -or $Count -lt $Limit) {
+            [object] $Result = $Target `
+                | ForEach-Object { $Property ? $_.$Property : $_ } `
+                | Where-Object { -not $Truthy -or $_ } `
+                | Where-Object { -not $Falsy -or -not $_ } `
+                | Where-Object { $null -eq $EQ -or $_ -eq $EQ } `
+                | Where-Object { $null -eq $NE -or $_ -ne $NE } `
+                | Where-Object { $null -eq $LT -or $_ -lt $LT } `
+                | Where-Object { $null -eq $LE -or $_ -le $LE } `
+                | Where-Object { $null -eq $GT -or $_ -gt $GT } `
+                | Where-Object { $null -eq $GE -or $_ -ge $GE } `
+                | Where-Object { -not $Contains -or $_ -in $Contains } `
+                | Where-Object { -not $Match -or $_ -match $Match } `
+                | ForEach-Object { $Target }
+
+            if ($null -ne $Result) {
+                ++$Count;
+                return $Result
+            }
+        }
+    }
+}
+
+<#
+    .SYNOPSIS
+    配列の最初の要素を取得します。
+
+    .DESCRIPTION
+    配列が$nullまたは要素を持たない場合は、$nullを返却します。
+    
+    .PARAMETER Target
+    配列。
+
+    .INPUTS
+    配列。
+
+    .OUTPUTS
+    [object] 最初の要素。存在しない場合は$null
+
+    .EXAMPLE
+    Get-FirstItem @('foo, 'bar')
+
+    fooを返却します。
+
+    .EXAMPLE
+    Get-FirstItem $null
+
+    $nullを返却します。
+#>
+function Get-FirstItem {
+    [OutputType([object])]
+
+    Param(
+        [object[]] $Target
+    )
+
+    Process {
+        if ($Target.Length -gt 0) {
+            return $Target[0]
+        }
     }
 }
 
@@ -103,7 +158,7 @@ function Find-Object {
     クォートの解除は、先頭と末尾がともにダブルクォート、
     またはともにシングルクォートの場合のみ行います。
 
-    .PARAMETER Target
+    .PARAMETER String
     最適化する文字列。
 
     .INPUTS
@@ -121,17 +176,58 @@ function Optimize-String {
     [OutputType([string])]
 
     Param(
-        [Parameter(Mandatory, ValueFromPipeline)] [string] $Target
+        [Parameter(Mandatory, ValueFromPipeline)] [string] $String
     )
 
     Process {
-        $Target = $Target.Trim()
+        $String = $String.Trim()
 
-        if ($Target -match '^"(.*)"$') {
+        if ($String -match '^"(.*)"$') {
             return $Matches[1]
-        } elseif ($Target -match "^'(.*)'$") {
+        } elseif ($String -match "^'(.*)'$") {
             return $Matches[1]
         } else {
+            return $String
+        }
+    }
+}
+
+<#
+    .SYNOPSIS
+    $nullをAutomationNullに変換します。
+
+    .DESCRIPTION
+    $nullをAutomationNullに変換することで、
+    オブジェクトを安全にパイプラインに流すことができます。
+    
+    .PARAMETER Object
+    オブジェクト。
+
+    .INPUTS
+    なし。
+
+    .OUTPUTS
+    [object] オブジェクト。オブジェクトが$nullの場合は、AutomationNull。
+
+    .EXAMPLE
+    Optimize-Void 1
+
+    1を返却します。
+
+    .EXAMPLE
+    Optimize-Void $null
+
+    AutomationNullを返却します。
+#>
+function Optimize-Void {
+    [OutputType([object])]
+
+    Param(
+        [object] $Target
+    )
+
+    Process {
+        if ($null -ne $Target) {
             return $Target
         }
     }

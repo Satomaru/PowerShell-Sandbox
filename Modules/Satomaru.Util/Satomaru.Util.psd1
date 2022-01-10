@@ -4,5 +4,13 @@
     Author = 'Satomaru'
     Description = '全てのモジュールの土台となるユーティリティです。'
     PowerShellVersion = '7.2'
-    FunctionsToExport = @('Find-Object', 'Optimize-String', 'Split-Parameter', 'Test-Array')
+
+    FunctionsToExport = @(
+        'Find-Object',
+        'Get-FirstItem',
+        'Optimize-String',
+        'Optimize-Void',
+        'Split-Parameter',
+        'Test-Array'
+    )
 }
