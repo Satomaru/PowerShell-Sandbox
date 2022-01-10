@@ -37,10 +37,10 @@ function Show-MessageBox {
     [OutputType([System.Windows.Forms.DialogResult])]
 
     Param(
-        [String[]] $Message,
-        [String] $Title,
-        [MessageBoxButtons] $Buttons,
-        [MessageBoxIcon] $Icon
+        [String[]] $Message = "",
+        [String] $Title = "",
+        [MessageBoxButtons] $Buttons = [MessageBoxButtons]::OK,
+        [MessageBoxIcon] $Icon = [MessageBoxIcon]::None
     )
 
     Process {
@@ -50,109 +50,121 @@ function Show-MessageBox {
 
 <#
     .SYNOPSIS
-    コンソールから配列の選択を待ち受けます。
+    配列の要素番号を選択します。
 
     .DESCRIPTION
-    コンソールに配列の要素を全て表示した後、要素番号を待ち受けます。
-    正しい要素番号が入力された時は、その要素を返却します。
-    
+    コンソールに配列を表示した後、配列の要素番号を待ち受けます。
+    正しい要素番号が入力された時は、その要素番号を返却します。
+
     .PARAMETER Array
     配列。
-    
-    .PARAMETER Prompt
-    待ち受けメッセージの配列。
-    配列の各要素の終わりで改行して表示します。
+
+    .PARAMETER Oneline
+    配列を1行で表示します。
+
+    .PARAMETER AbortWhenNot
+    存在しない要素番号が入力された場合は中断します。
     
     .INPUTS
     なし。
 
     .OUTPUTS
-    [object] 選択された要素。
+    [int] 選択された要素番号。
 
     .EXAMPLE
-    Read-ArrayItem @('foo', 'bar', 'baz')
-    
-    「  0 : foo」
-    「  1 : bar」
-    「  2 : baz」
-    「Input Number: 」
-    という待ち受けメッセージを表示して、0..2を待ち受けます。
+    Select-Array @('foo', 'bar', 'baz')
+
+    配列の要素番号(0..2)を待ち受けます。
 #>
-function Read-ArrayItem {
-    [OutputType([object])]
+function Select-Array {
+    [OutputType([int])]
 
     Param(
-        [Parameter(Mandatory)] [ValidateNotNull()] [object[]] $Array,
-        [String[]] $Prompt = "Input Number"
+        [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [object[]] $Array,
+        [switch] $Oneline,
+        [switch] $AbortWhenNot
     )
 
     Process {
-        for ([int] $Index = 0; $Index -lt $Array.Length; $Index++) {
-            Write-Host ("{0,2}" -f $Index) : ($Array[$Index])
-        }
+        do {
+            [string] $Choose = if ($Oneline) {
+                [string[]] $Entries = for ([int] $Index = 0; $Index -lt $Array.Length; $Index++) {
+                    "[{0}]{1}" -f $Index, $Array[$Index]
+                }
 
-        Write-Host
-        [string] $Choose = Read-Host ($Prompt | Out-String).Trim("`r","`n")
+                Read-Host -Prompt ($Entries -join ", ")
+            } else {
+                [object[]] $Entries = for ([int] $Index = 0; $Index -lt $Array.Length; $Index++) {
+                    [PSCustomObject] @{ Index = $Index; Value = $Array[$Index] }
+                }
 
-        if ($Choose -match "^\d+$") {
-            [int] $Index = $Choose
-
-            if ($index -lt $Array.Length) {
-                return $Array[$Index]
+                $Entries | Format-Table -Property Index, Value | Out-Host
+                Read-Host -Prompt "Input Index"
             }
-        }
+
+            if ($Choose -match "^\d+$") {
+                [int] $Index = $Choose
+
+                if ($Index -lt $Array.Length) {
+                    return $Index
+                }
+            }
+        } while (-not $AbortWhenNot)
     }
 }
 
 <#
     .SYNOPSIS
-    コンソールから選択肢の入力を待ち受けます。
+    ディクショナリのキーを選択します。
 
     .DESCRIPTION
-    待ち受けメッセージと予め決めている選択肢を表示して、入力を待ち受けます。
-    予め決めている選択肢以外を入力された場合は、
-    再度待ち受けメッセージを表示して入力を待ち受けます。
-    
-    .PARAMETER Options
-    予め決めている選択肢。大文字／小文字は区別しません。
-    OrderedDictionaryのキーが選択肢、値が表示名となります。
-    
-    .PARAMETER Prompt
-    待ち受けメッセージの配列。
-    配列の各要素の終わりで改行して表示します。
-    
+    コンソールにディクショナリを表示した後、
+    ディクショナリのキーを待ち受けます。
+    正しいキーが入力された時は、そのキーを返却します。
+
+    .PARAMETER Dictionary
+    ディクショナリ。
+
+    .PARAMETER Oneline
+    ディクショナリを1行で表示します。
+
+    .PARAMETER AbortWhenNot
+    存在しないキーが入力された場合は中断します。
+
     .INPUTS
     なし。
 
     .OUTPUTS
-    [string] 入力された選択肢。
+    [string] 選択されたキー。
 
     .EXAMPLE
-    Read-Option -Options ([ordered]@{R="再試行"; C="キャンセル"}) -Prompt "処理に失敗しました。"
+    Select-Dictionary ([ordered]@{R="再試行"; C="キャンセル"}) -Oneline
     
-    「処理に失敗しました。」
-    「[R]再試行, [C]キャンセル: 」
-    という待ち受けメッセージを表示して、"R"または"C"を待ち受けます。
+    "R"または"C"を待ち受けます。
 #>
-function Read-Option {
-    [OutputType([String])]
+function Select-Dictionary {
+    [OutputType([string])]
 
     Param(
-        [Parameter(Mandatory)] [System.Collections.Specialized.OrderedDictionary] $Options,
-        [String[]] $Prompt
+        [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [System.Collections.Specialized.OrderedDictionary] $Dictionary,
+        [switch] $Oneline,
+        [switch] $AbortWhenNot
     )
 
     Process {
         do {
-            $Prompt += ($Options.GetEnumerator() | ForEach-Object { "[{0}]{1}" -f $_.Key,$_.Value }) -join ", "
-            [string] $Answer = Read-Host -Prompt ($Prompt | Out-String).Trim("`r","`n")
-
-            foreach ($Key in $Options.Keys) {
-                if ($Answer -eq $Key) {
-                    return $Key
-                }
+            [string] $Choose = if ($Oneline) {
+                [string[]] $Entries = $Dictionary.GetEnumerator() | ForEach-Object { "[{0}]{1}" -f $_.Key, $_.Value }
+                Read-Host -Prompt ($Entries -join ", ")
+            } else {
+                $Dictionary | Out-Host
+                Read-Host -Prompt "Input Name"
             }
-        } while ($true)
+
+            if ($Dictionary.Contains($Choose)) {
+                return $Choose
+            }
+        } while (-not $AbortWhenNot)
     }
 }
 
@@ -213,12 +225,10 @@ function Confirm-Exception {
                     return $true
                 }
             } else {
-                [hashtable] $Option = @{
-                    Options = [ordered] @{ R = "etry"; C = "ancel" }
-                    Prompt = $Exception.Message
-                }
+                $Dictionary = [ordered] @{ R = "etry"; C = "ancel" }
+                Write-Host $Exception.Message
 
-                if ((Read-Option @Option) -eq "R") {
+                if ((Select-Dictionary $Dictionary -Oneline) -eq "R") {
                     return $true
                 }
             }

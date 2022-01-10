@@ -1,7 +1,7 @@
 using namespace System.Management.Automation
 
 function prompt {
-    Get-Location | Split-Path -Leaf | ForEach-Object { $_ + (">" * ($NestedPromptLevel + 1)) + " " }
+    (Get-Location | Split-Path -Leaf) + (">" * ($NestedPromptLevel + 1)) + " "
 }
 
 function home {
@@ -28,26 +28,35 @@ function help {
     Clear-Host
     Write-Host Satomaru Module Help:
     Write-Host
-    [string] $ModuleMame = Read-ArrayItem -Array (modules | ForEach-Object Name)
 
-    if (-not $ModuleMame) {
+    [string[]] $ModuleNames = (modules).Name
+
+    if ($ModuleNames.Length -eq 0) {
+        Write-Host "Module Not Found."
+        return
+    }
+
+    [nullable[int]] $ModuleIndex = Select-Array $ModuleNames -AbortWhenNot
+
+    if ($null -eq $ModuleIndex) {
         return
     }
 
     Write-Host
-    Write-Host $ModuleMame Help:
+    Write-Host $ModuleNames[$ModuleIndex] Help:
     Write-Host
-    $Commands = Get-Module $ModuleMame | ForEach-Object ExportedCommands
 
-    if ($Commands.Count -eq 0) {
-        Write-Host "Commands Not Found."
+    [object[]] $Commands = (Get-Module $ModuleNames[$ModuleIndex]).ExportedCommands.Values
+
+    if ($Commands.Length -eq 0) {
+        Write-Host "Command Not Found."
         return
     }
 
-    [CommandInfo] $Command = Read-ArrayItem -Array $Commands.Values
+    [nullable[int]] $CommandIndex = Select-Array $Commands -AbortWhenNot
 
-    if ($Command) {
-        $Command | Get-Help -Full
+    if ($null -ne $CommandIndex) {
+        $Commands[$CommandIndex] | Get-Help -Full
     }
 }
 

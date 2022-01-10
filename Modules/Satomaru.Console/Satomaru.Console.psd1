@@ -15,8 +15,8 @@
 
     FunctionsToExport = @(
         'Confirm-Exception',
-        'Read-ArrayItem',
-        'Read-Option',
+        'Select-Array',
+        'Select-Dictionary',
         'Show-MessageBox'
     )
 }
