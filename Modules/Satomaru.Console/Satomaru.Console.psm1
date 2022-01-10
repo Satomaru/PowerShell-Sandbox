@@ -170,7 +170,7 @@ function Select-Dictionary {
 
 <#
     .SYNOPSIS
-    例外メッセージを表示して、再試行するかキャンセルするかを待ち受けます。
+    例外を表示して、再試行またはキャンセルを待ち受けます。
 
     .DESCRIPTION
     ErrorActionパラメータがContinueの時は、
