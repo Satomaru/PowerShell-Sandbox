@@ -43,7 +43,8 @@ function ConvertTo-Expression {
         }
 
         if ($Object -is [string]) {
-            return """$Object"""
+            [string] $Escaped = $Object -replace '"', '""'
+            return """$Escaped"""
         }
 
         if ($Object -is [char]) {
