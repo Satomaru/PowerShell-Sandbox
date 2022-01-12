@@ -28,14 +28,15 @@ Wikiに知り得た事柄を書き留めようと思います。
 ### Satomaru.Util
 全てのモジュールの土台となるユーティリティです。
 
-| 関数名          | 概要                                     |
-| --------------- | ---------------------------------------- |
-| Find-Object     | オブジェクトを抽出します。               |
-| Get-FirstItem   | 配列の最初の要素を取得します。           |
-| Optimize-String | 文字列を最適化します。                   |
-| Optimize-Void   | $nullをAutomationNullに変換します。      |
-| Split-Parameter | パラメータ文字列を式毎に分割します。     |
-| Test-Array      | 配列が期待どおりであることを検査します。 |
+| 関数名                   | 概要                                     |
+| ------------------------ | ---------------------------------------- |
+| ConvertTo-Expression     | オブジェクトを式に変換します。           |
+| Find-Object              | オブジェクトを抽出します。               |
+| Get-FirstItem            | 配列の最初の要素を取得します。           |
+| Optimize-String          | 文字列を最適化します。                   |
+| Optimize-Void            | $nullをAutomationNullに変換します。      |
+| Split-Parameter          | パラメータ文字列を式毎に分割します。     |
+| Test-Array               | 配列が期待どおりであることを検査します。 |
 
 ### Satomaru.Validator
 関数の引数に用いることができるバリデータクラス群です。
