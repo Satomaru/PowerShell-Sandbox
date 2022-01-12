@@ -6,6 +6,7 @@
     PowerShellVersion = '7.2'
 
     FunctionsToExport = @(
+        'ConvertTo-Expression',
         'Find-Object',
         'Get-FirstItem',
         'Optimize-String',

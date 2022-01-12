@@ -1,5 +1,75 @@
 <#
     .SYNOPSIS
+    オブジェクトを式に変換します。
+
+    .DESCRIPTION
+    オブジェクトを、オブジェクトの内容を表すPowerScriptの式に変換します。
+    ただし、全く同一の内容にはなりません。
+    
+    .PARAMETER Object
+    変換するオブジェクト
+
+    .INPUTS
+    変換するオブジェクト
+
+    .OUTPUTS
+    [string] オブジェクトの内容を表すPowerScriptの式。
+
+    .EXAMPLE
+    ConvertTo-Expression @{Foo=@(1,2);Bar=@{A=$true;B=$null};Baz="abc"}
+
+    以下の文字列を返却します。
+    @{"Baz" = "abc"; "Bar" = @{"A" = $true; "B" = $null}; "Foo" = @(1, 2)}
+#>
+function ConvertTo-Expression {
+    [OutputType([string])]
+
+    Param(
+        [Parameter(ValueFromPipeline)] [AllowNull()] [object] $Object
+    )
+
+    Process {
+        if ($null -eq $Object) {
+            return "`$null"
+        }
+
+        if ($Object.GetType().IsArray) {
+            [string[]] $Elements = $Object | ConvertTo-Expression
+            return "@($($Elements -join ", "))"
+        }
+
+        if ($Object -is [boolean]) {
+            return $Object ? "`$true" : "`$false"
+        }
+
+        if ($Object -is [string]) {
+            return """$Object"""
+        }
+
+        if ($Object -is [char]) {
+            return [string][int] $Object
+        }
+
+        if ($Object -is [scriptblock]) {
+            return "{$Object}"
+        }
+
+        if ($Object -is [hashtable]) {
+            [string[]] $Expressions = foreach ($Key in $Object.Keys) {
+                [string] $FormattedKey = ConvertTo-Expression $Key
+                [string] $FormattedValue = ConvertTo-Expression $Object[$Key]
+                "$FormattedKey = $FormattedValue"
+            }
+
+            return "@{$($Expressions -join "; ")}"
+        }
+
+        return [string] $Object
+    }
+}
+
+<#
+    .SYNOPSIS
     オブジェクトを抽出します。
 
     .DESCRIPTION
