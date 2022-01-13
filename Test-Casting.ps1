@@ -18,7 +18,7 @@ function Test-Casting {
         try {
             [boolean] $NoEnumerate = $null -ne $Value -and $Value.GetType().IsArray
             [object[]] $Mapped = Write-Output $Value -NoEnumerate:$NoEnumerate | ForEach-Object $Mapper
-            [object] $Casted = $Mapped[0]
+            [object] $Casted = ($Mapped.Length -ne 0) ? $Mapped[0] : $null
             $Result.Casted = ConvertTo-Expression $Casted
             $Result.Type = ($null -ne $Casted) ? $Casted.GetType().Name : "" 
         } catch {
@@ -64,5 +64,5 @@ function inspect {
         @("0", "1"),
         @("a", "b"),
         @("foo", "bar")
-    ) | Test-Casting { [string] $_ }
+    ) | Test-Casting { [boolean] $_ }
 }
