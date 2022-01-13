@@ -109,7 +109,7 @@ function ConvertTo-Expression {
     [object] 抽出されたオブジェクト。
 
     .EXAMPLE
-    Get-ChildItem -File | Find-Object {$_.Extension -eq ".txt"; $_.Length -lt 60}
+    Get-ChildItem -File | Find-Object {$_.Extension -eq ".txt"; $_.Length -le 60}
 
     拡張子が".txt"、かつファイルサイズが60byte以下のファイルを抽出します。
 #>
