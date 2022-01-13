@@ -7,10 +7,10 @@
     ただし、全く同一の内容にはなりません。
     
     .PARAMETER Object
-    変換するオブジェクト
+    変換するオブジェクト。
 
     .INPUTS
-    変換するオブジェクト
+    変換するオブジェクト。
 
     .OUTPUTS
     [string] オブジェクトの内容を表すPowerScriptの式。
@@ -74,82 +74,54 @@ function ConvertTo-Expression {
     オブジェクトを抽出します。
 
     .DESCRIPTION
-    オブジェクトを受け取り、 期待する条件に一致することを検査します。
-    期待する条件に一致する場合は、そのまま返却します。
+    条件に一致したオブジェクトを出力します。
 
-    .PARAMETER Target
-    オブジェクト。
+    .PARAMETER Where
+    検索条件スクリプトブロック。
+    オブジェクトを抽出する時は、$trueを返却してください。
 
-    .PARAMETER Limit
-    抽出するオブジェクトの最大個数。
+    スクリプトブロック内では、抽出するオブジェクトを$_で参照できます。
+    Propertyパラメータを指定した場合は、$_は指定されたプロパティの値です。
 
+    booleanを複数返却した場合は、
+    Orパラメータを指定した場合はいずれかが$trueの時に、
+    Orパラメータを指定しなかった場合は全てが$trueの時に、
+    そのオブジェクトを抽出します。
+   
     .PARAMETER Property
-    オブジェクトの検査対象となるプロパティ名。
-    指定しなかった場合は、オブジェクトそのものが検査されます。
+    指定した場合は、抽出するオブジェクトからこのプロパティを取得して、検索条件スクリプトブロックに送ります。
+    指定しなかった場合は、抽出するオブジェクトそのものを送ります。
+   
+    .PARAMETER Limit
+    抽出する最大個数。
 
-    .PARAMETER Truthy
-    trueと解釈できることを期待します。
+    .PARAMETER Object
+    抽出するオブジェクト。
 
-    .PARAMETER Falsy
-    falseと解釈できることを期待します。
-
-    .PARAMETER EQ
-    指定値と等しいことを期待します。
-
-    .PARAMETER NE
-    指定値と異なることを期待します。
-
-    .PARAMETER LT
-    指定値よりも小さいことを期待します。
-
-    .PARAMETER LE
-    指定値よりも小さいか等しいことを期待します。
-
-    .PARAMETER GT
-    指定値よりも大きいことを期待します。
-
-    .PARAMETER GE
-    指定値よりも大きいか等しいことを期待します。
-
-    .PARAMETER Contains
-    指定値のうちのいずれか一つと等しいことを期待します。
-
-    .PARAMETER Match
-    指定された正規表現に一致することを期待します。
+    .PARAMETER Or
+    抽出条件の振る舞いを切り替えます。
+    詳細は、Whereパラメータを参照してください。
 
     .INPUTS
-    オブジェクト。
+    抽出するオブジェクト。
 
     .OUTPUTS
-    [object] 期待する条件に一致する場合は、入力されたオブジェクト。
+    [object] 抽出されたオブジェクト。
 
     .EXAMPLE
-    1..10 | Find-Object -Limit 3 -GE 4
+    Get-ChildItem -File | Find-Object {$_.Extension -eq ".txt"; $_.Length -lt 60}
 
-    4, 5, 6が抽出されます。
-
-    .EXAMPLE
-    Get-Item *.txt | Find-Object -Property Length -LE 60
-
-    ファイルサイズが70byte以下の*.txtが抽出されます。
+    拡張子が".txt"、かつファイルサイズが60byte以下のファイルを抽出します。
 #>
 function Find-Object {
     [OutputType([object])]
 
     Param(
-        [Parameter(Mandatory, ValueFromPipeline)] [object] $Target,
-        [nullable[int]] $Limit,
-        [string] $Property,
-        [switch] $Truthy,
-        [switch] $Falsy,
-        [object] $EQ,
-        [object] $NE,
-        [object] $LT,
-        [object] $LE,
-        [object] $GT,
-        [object] $GE,
-        [object[]] $Contains,
-        [regex] $Match
+        [Parameter(Mandatory)] [ValidateNotNull()] [scriptblock] $Where,
+        [ValidateNotNullOrEmpty()] [string] $Property,
+        [ValidateRange(1, [int]::MaxValue)] [nullable[int]] $Limit,
+        [Parameter(Mandatory, ValueFromPipeline)] [ValidateNotNull()] [object] $Object,
+        [switch] $Or
     )
 
     Begin {
@@ -158,23 +130,14 @@ function Find-Object {
 
     Process {
         if ($null -eq $Limit -or $Count -lt $Limit) {
-            [object] $Result = $Target `
-                | ForEach-Object { $Property ? $_.$Property : $_ } `
-                | Where-Object { -not $Truthy -or $_ } `
-                | Where-Object { -not $Falsy -or -not $_ } `
-                | Where-Object { $null -eq $EQ -or $_ -eq $EQ } `
-                | Where-Object { $null -eq $NE -or $_ -ne $NE } `
-                | Where-Object { $null -eq $LT -or $_ -lt $LT } `
-                | Where-Object { $null -eq $LE -or $_ -le $LE } `
-                | Where-Object { $null -eq $GT -or $_ -gt $GT } `
-                | Where-Object { $null -eq $GE -or $_ -ge $GE } `
-                | Where-Object { -not $Contains -or $_ -in $Contains } `
-                | Where-Object { -not $Match -or $_ -match $Match } `
-                | ForEach-Object { $Target }
+            [object] $Testee = ($Property -ne "") ? $Object.$Property : $Object
+            [boolean[]] $Test = Write-Output $Testee | ForEach-Object $Where
 
-            if ($null -ne $Result) {
-                ++$Count;
-                return $Result
+            if ($Test.Length -ne 0) {
+                if ($Or ? $Test -contains $true : -not ($Test -contains $false)) {
+                    ++$Count;
+                    return $Object
+                }
             }
         }
     }

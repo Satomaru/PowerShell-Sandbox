@@ -10,7 +10,6 @@
     )
 
     FunctionsToExport = @(
-        'Find-Item',
         'Find-TextItem',
         'Get-TextContent'
     )
