@@ -1,6 +1,6 @@
 ﻿using namespace Microsoft.PowerShell.Commands
 using namespace System.Management.Automation
-using module Satomaru.Validator
+using module Satomaru.Definition
 
 <#
     コンテンツ仕様。

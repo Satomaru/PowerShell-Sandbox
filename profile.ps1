@@ -1,15 +1,12 @@
 using namespace System.Management.Automation
+using module Satomaru.Definition
+
+Set-PSReadLineKeyHandler -Key Tab -Function Complete
+[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[System.Console]::InputEncoding = [System.Text.Encoding]::UTF8
 
 function prompt {
     (Get-Location | Split-Path -Leaf) + (">" * ($NestedPromptLevel + 1)) + " "
-}
-
-function home {
-    Get-Item ~\OneDrive\ドキュメント\PowerShell
-}
-
-function modules {
-    (home).GetDirectories("Modules") | Get-ChildItem -Directory
 }
 
 function rma {
@@ -20,7 +17,7 @@ function rma {
 
 function ima {
     Clear-Host
-    modules | Import-Module -Force -Verbose
+    Get-ChildItem Modules -Directory | Import-Module -Force -Verbose
     Get-Module
 }
 
@@ -60,7 +57,14 @@ function help {
     }
 }
 
-[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-[System.Console]::InputEncoding = [System.Text.Encoding]::UTF8
-home | Set-Location
-Get-Location
+function Import-DevModule {
+    [CmdletBinding()]
+
+    Param(
+        [Parameter(Mandatory)] [ValidateSet([ValidateSetDevModules])] [string] $Name
+    )
+
+    Process {
+        Import-Module -Name $Name -Force -Verbose
+    }
+}

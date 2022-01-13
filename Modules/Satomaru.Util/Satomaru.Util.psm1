@@ -118,9 +118,9 @@ function Find-Object {
 
     Param(
         [Parameter(Mandatory)] [ValidateNotNull()] [scriptblock] $Where,
+        [Parameter(Mandatory, ValueFromPipeline)] [ValidateNotNull()] [object] $Object,
         [ValidateNotNullOrEmpty()] [string] $Property,
         [ValidateRange(1, [int]::MaxValue)] [nullable[int]] $Limit,
-        [Parameter(Mandatory, ValueFromPipeline)] [ValidateNotNull()] [object] $Object,
         [switch] $Or
     )
 

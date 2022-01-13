@@ -8,7 +8,7 @@
     RequiredModules = @(
         'Satomaru.Console',
         'Satomaru.Util',
-        'Satomaru.Validator'
+        'Satomaru.Definition'
     )
 
     FunctionsToExport = @(

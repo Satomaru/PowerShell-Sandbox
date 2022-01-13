@@ -1,8 +1,8 @@
 @{
-    RootModule = 'Satomaru.Validator.psm1'
+    RootModule = 'Satomaru.Definition.psm1'
     ModuleVersion = '1.0.0.0'
     Author = 'Satomaru'
-    Description = '関数の引数に用いることができるバリデータクラス群です。'
+    Description = '関数の定義に用いることができるクラス群です。'
     PowerShellVersion = '7.2'
 
     RequiredModules = @(
