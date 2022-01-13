@@ -16,13 +16,13 @@ function Test-Casting {
         }
 
         try {
-            [object[]] $Mapped = Write-Output $Value -NoEnumerate | ForEach-Object $Mapper
+            [boolean] $NoEnumerate = $null -ne $Value -and $Value.GetType().IsArray
+            [object[]] $Mapped = Write-Output $Value -NoEnumerate:$NoEnumerate | ForEach-Object $Mapper
             [object] $Casted = $Mapped[0]
             $Result.Casted = ConvertTo-Expression $Casted
             $Result.Type = ($null -ne $Casted) ? $Casted.GetType().Name : "" 
         } catch {
             $Result.Casted = "*Error*"
-            $Result.Type = $_.Exception.GetBaseException().GetType().Name
         }
 
         return $Result
@@ -30,6 +30,8 @@ function Test-Casting {
 }
 
 function inspect {
+    Clear-Host
+
     @(
         $null,
         $false,
@@ -62,5 +64,5 @@ function inspect {
         @("0", "1"),
         @("a", "b"),
         @("foo", "bar")
-    ) | Test-Casting { [boolean] $_ }
+    ) | Test-Casting { [string] $_ }
 }
