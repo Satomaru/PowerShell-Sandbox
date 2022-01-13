@@ -38,7 +38,7 @@ class ValidateFileName : ValidateEnumeratedArgumentsAttribute {
     }
 }
 
-# ValidateSetで.\Modules\*ディレクトリを指定可能にします。
+# ValidateSetで./Modules/*ディレクトリ名を指定可能にします。
 Class ValidateSetDevModules : IValidateSetValuesGenerator {
     [String[]] GetValidValues() {
         return Get-ChildItem Modules -Directory | ForEach-Object Name
