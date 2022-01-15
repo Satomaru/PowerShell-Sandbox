@@ -7,7 +7,7 @@ class ValidateDirectory : ValidateEnumeratedArgumentsAttribute {
         [string] $Actual = $Element
 
         try {
-            if ($Actual) {
+            if ($Actual -ne "") {
                 if (-not (Test-Path -LiteralPath $Actual -PathType Container)) {
                     throw [System.ArgumentException]::new("ディレクトリが存在しません。: $Element")
                 }
@@ -24,7 +24,7 @@ class ValidateFileName : ValidateEnumeratedArgumentsAttribute {
         [char[]] $Actual = $Element
 
         try {
-            if ($Actual) {
+            if ($Actual.Length -gt 0) {
                 [char[]] $Invalids = [System.IO.Path]::GetInvalidFileNameChars()
 
                 foreach ($Char in $Actual) {
@@ -40,14 +40,14 @@ class ValidateFileName : ValidateEnumeratedArgumentsAttribute {
 }
 
 # ValidateSetに、./Modules/*ディレクトリ名を設定します。
-Class ValidateSetDevModules : IValidateSetValuesGenerator {
+class ValidateSetDevModules : IValidateSetValuesGenerator {
     [String[]] GetValidValues() {
         return (Get-ChildItem Modules -Directory).Name
     }
 }
 
 # ValidateSetに、日本語文字セット名を設定します。
-Class ValidateSetJaCharset : IValidateSetValuesGenerator {
+class ValidateSetJaCharset : IValidateSetValuesGenerator {
     [String[]] GetValidValues() {
         [HashSet[string]] $WebNameSet = [HashSet[string]]::new()
         [void] $WebNameSet.Add([System.Text.Encoding]::Default.WebName)
