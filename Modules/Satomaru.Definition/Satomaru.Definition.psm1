@@ -1,6 +1,7 @@
 using namespace System.Management.Automation
+using namespace System.Collections.Generic
 
-# 引数が実在するディレクトリのパスであることを検証します。
+# 引数が、実在するディレクトリのパスであることを検証します。
 class ValidateDirectory : ValidateEnumeratedArgumentsAttribute {
     [void] ValidateElement([object] $Element) {
         [string] $Actual = $Element
@@ -17,7 +18,7 @@ class ValidateDirectory : ValidateEnumeratedArgumentsAttribute {
     }
 }
 
-# 引数がファイル名として妥当であることを検証します。
+# 引数が、ファイル名として妥当であることを検証します。
 class ValidateFileName : ValidateEnumeratedArgumentsAttribute {
     [void] ValidateElement([object] $Element) {
         [char[]] $Actual = $Element
@@ -38,9 +39,25 @@ class ValidateFileName : ValidateEnumeratedArgumentsAttribute {
     }
 }
 
-# ValidateSetで./Modules/*ディレクトリ名を指定可能にします。
+# ValidateSetに、./Modules/*ディレクトリ名を設定します。
 Class ValidateSetDevModules : IValidateSetValuesGenerator {
     [String[]] GetValidValues() {
-        return Get-ChildItem Modules -Directory | ForEach-Object Name
+        return (Get-ChildItem Modules -Directory).Name
+    }
+}
+
+# ValidateSetに、日本語文字セット名を設定します。
+Class ValidateSetJaCharset : IValidateSetValuesGenerator {
+    [String[]] GetValidValues() {
+        [HashSet[string]] $WebNameSet = [HashSet[string]]::new()
+        [void] $WebNameSet.Add([System.Text.Encoding]::Default.WebName)
+
+        foreach ($Charset in "euc-jp", "iso-2022-jp", "shift_jis", "utf-8") {
+            try {
+                [void] $WebNameSet.Add([System.Text.Encoding]::GetEncoding($Charset).WebName)
+            } catch {}
+        }
+
+        return $WebNameSet | Sort-Object
     }
 }

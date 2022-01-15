@@ -26,7 +26,7 @@ function help {
     Write-Host Satomaru Module Help:
     Write-Host
 
-    [string[]] $ModuleNames = (modules).Name
+    [string[]] $ModuleNames = (Get-ChildItem .\Modules -Directory).Name
 
     if ($ModuleNames.Length -eq 0) {
         Write-Host "Module Not Found."

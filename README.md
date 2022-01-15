@@ -16,13 +16,22 @@ Wikiに知り得た事柄を書き留めようと思います。
 | Select-Dictionary | ディクショナリのキーを選択します。                     |
 | Show-MessageBox   | メッセージボックスを表示します。                       |
 
+### Satomaru.Definition
+関数の定義に用いることができるクラス群です。
+
+| クラス名              | 概要                                                       |
+| --------------------- | ---------------------------------------------------------- |
+| ValidateDirectory     | 引数が、実在するディレクトリのパスであることを検証します。 |
+| ValidateFileName      | 引数が、ファイル名として妥当であることを検証します。       |
+| ValidateSetDevModules | ValidateSetに、./Modules/*ディレクトリ名を設定します。     |
+| ValidateSetJaCharset  | ValidateSetに、日本語文字セット名を設定します。            |
+
 ### Satomaru.FileSystem
 ファイルに関する関数群です。
 
-| 関数名          | 概要                                 |
-| --------------- | ------------------------------------ |
-| Find-TextItem   | テキストファイルを抽出します。       |
-| Get-TextContent | テキストファイルの内容を取得します。 |
+| 関数名          | 概要                             |
+| --------------- | -------------------------------- |
+| Get-TextContent | テキストファイルを読み込みます。 |
 
 ### Satomaru.Util
 全てのモジュールの土台となるユーティリティです。
@@ -35,16 +44,7 @@ Wikiに知り得た事柄を書き留めようと思います。
 | Optimize-String          | 文字列を最適化します。                   |
 | Optimize-Void            | $nullをAutomationNullに変換します。      |
 | Split-Parameter          | パラメータ文字列を式毎に分割します。     |
-| Test-Array               | 配列が期待どおりであることを検査します。 |
-
-### Satomaru.Definition
-関数の定義に用いることができるクラス群です。
-
-| クラス名          | 概要                                                       |
-| ----------------- | ---------------------------------------------------------- |
-| DevModules        | ValidateSetで./Modules/*ディレクトリ名を指定可能にします。 |
-| ValidateDirectory | 引数が実在するディレクトリのパスであることを検証します。   |
-| ValidateFileName  | 引数がファイル名として妥当であることを検証します。         |
+| Test-Object              | オブジェクトを検証します。               |
 
 ### Satomaru.Web
 Webアクセスに関する関数群です。

@@ -22,6 +22,7 @@
     @{"Baz" = "abc"; "Bar" = @{"A" = $true; "B" = $null}; "Foo" = @(1, 2)}
 #>
 function ConvertTo-Expression {
+    [CmdletBinding()]
     [OutputType([string])]
 
     Param(
@@ -65,6 +66,20 @@ function ConvertTo-Expression {
             return "@{$($Expressions -join "; ")}"
         }
 
+        [string] $TypeName = $Object.GetType().Name
+
+        if ($TypeName -match "^(\w+)``") {
+            $TypeName = $Matches[1]
+        }
+
+        if ($TypeName -in "ArrayList", "HashSet", "SortedSet") {
+            return ConvertTo-Expression ([object[]] $Object)
+        }
+
+        if ($TypeName -in "OrderedDictionary", "SortedList") {
+            return ConvertTo-Expression ([hashtable] $Object)
+        }
+
         return [string] $Object
     }
 }
@@ -83,10 +98,8 @@ function ConvertTo-Expression {
     スクリプトブロック内では、抽出するオブジェクトを$_で参照できます。
     Propertyパラメータを指定した場合は、$_は指定されたプロパティの値です。
 
-    booleanを複数返却した場合は、
-    Orパラメータを指定した場合はいずれかが$trueの時に、
-    Orパラメータを指定しなかった場合は全てが$trueの時に、
-    そのオブジェクトを抽出します。
+    booleanを複数返却した場合は、全て$trueの時にそのオブジェクトを抽出しますが、
+    Orパラメータを指定した場合は、いずれかが$trueの時に抽出します。
    
     .PARAMETER Property
     指定した場合は、抽出するオブジェクトからこのプロパティを取得して、検索条件スクリプトブロックに送ります。
@@ -95,12 +108,12 @@ function ConvertTo-Expression {
     .PARAMETER Limit
     抽出する最大個数。
 
-    .PARAMETER Object
-    抽出するオブジェクト。
-
     .PARAMETER Or
     抽出条件の振る舞いを切り替えます。
     詳細は、Whereパラメータを参照してください。
+
+    .PARAMETER Object
+    抽出するオブジェクト。
 
     .INPUTS
     抽出するオブジェクト。
@@ -109,19 +122,20 @@ function ConvertTo-Expression {
     [object] 抽出されたオブジェクト。
 
     .EXAMPLE
-    Get-ChildItem -File | Find-Object {$_.Extension -eq ".txt"; $_.Length -le 60}
+    Get-ChildItem | Find-Object { $_.Extension -eq ".ps1"; $_.Length -gt 1500 }
 
-    拡張子が".txt"、かつファイルサイズが60byte以下のファイルを抽出します。
+    拡張子が".ps1"、かつファイルサイズが1,500byteより大きいファイルを抽出します。
 #>
 function Find-Object {
+    [CmdletBinding()]
     [OutputType([object])]
 
     Param(
         [Parameter(Mandatory)] [ValidateNotNull()] [scriptblock] $Where,
-        [Parameter(Mandatory, ValueFromPipeline)] [ValidateNotNull()] [object] $Object,
-        [ValidateNotNullOrEmpty()] [string] $Property,
+        [string] $Property,
         [ValidateRange(1, [int]::MaxValue)] [nullable[int]] $Limit,
-        [switch] $Or
+        [switch] $Or,
+        [Parameter(Mandatory, ValueFromPipeline)] [ValidateNotNull()] [object] $Object
     )
 
     Begin {
@@ -130,14 +144,11 @@ function Find-Object {
 
     Process {
         if ($null -eq $Limit -or $Count -lt $Limit) {
-            [object] $Testee = ($Property -ne "") ? $Object.$Property : $Object
-            [boolean[]] $Test = Write-Output $Testee | ForEach-Object $Where
+            [boolean] $Ok = Write-Output $Object | Test-Object -Where $Where -Property $Property -Or:$Or
 
-            if ($Test.Length -ne 0) {
-                if ($Or ? $Test -contains $true : -not ($Test -contains $false)) {
-                    ++$Count;
-                    return $Object
-                }
+            if ($Ok) {
+                [void] ++$Count
+                return $Object
             }
         }
     }
@@ -170,10 +181,11 @@ function Find-Object {
     $nullを返却します。
 #>
 function Get-FirstItem {
+    [CmdletBinding()]
     [OutputType([object])]
 
     Param(
-        [object[]] $Target
+        [object[]] [AllowNull()] $Target
     )
 
     Process {
@@ -207,6 +219,7 @@ function Get-FirstItem {
     "foo " が返却されます。
 #>
 function Optimize-String {
+    [CmdletBinding()]
     [OutputType([string])]
 
     Param(
@@ -254,10 +267,11 @@ function Optimize-String {
     AutomationNullを返却します。
 #>
 function Optimize-Void {
+    [CmdletBinding()]
     [OutputType([object])]
 
     Param(
-        [object] $Target
+        [object] [AllowNull()] $Target
     )
 
     Process {
@@ -304,6 +318,7 @@ function Optimize-Void {
     $Parts には @("text/html", "charset=UTF-8") が、$Props には @{charset = "UTF-8"} が格納されます。
 #>
 function Split-Parameter {
+    [CmdletBinding()]
     [OutputType([string[]])]
 
     Param(
@@ -332,47 +347,75 @@ function Split-Parameter {
 
 <#
     .SYNOPSIS
-    配列が期待どおりであることを検査します。
+    オブジェクトを検証します。
 
     .DESCRIPTION
-    配列の長さ、および各要素の値が等しい場合は$trueを返却します。
+    オブジェクトが条件に一致した場合は$trueを返却します。
 
-    .PARAMETER Actual
-    検査対象となる配列の参照。
+    .PARAMETER Where
+    条件スクリプトブロック。
+    オブジェクトが条件に一致する場合は$trueを返却してください。
 
-    .PARAMETER Expected
-    期待値となる配列の参照。
+    スクリプトブロック内では、検証するオブジェクトを$_で参照できます。
+    Propertyパラメータを指定した場合は、$_は指定されたプロパティの値です。
+
+    booleanを複数返却した場合は、全て$trueの時にそのオブジェクトが条件に一致したとみなしますが、
+    Orパラメータを指定した場合は、いずれかが$trueの時に一致したとみなします。
+   
+    .PARAMETER Property
+    指定した場合は、検証するオブジェクトからこのプロパティを取得して、条件スクリプトブロックに送ります。
+    指定しなかった場合は、検証するオブジェクトそのものを送ります。
+
+    .PARAMETER Or
+    条件の振る舞いを切り替えます。
+    詳細は、Whereパラメータを参照してください。
+
+    .PARAMETER Object
+    検証するオブジェクト。
 
     .INPUTS
-    なし。
+    検証するオブジェクト。
 
     .OUTPUTS
-    [boolean] 配列の長さ、および各要素の値が等しい場合は$true。
+    [boolean] オブジェクトが条件に一致する場合は$true。
 
     .EXAMPLE
-    Test-Array -Actual ([ref] $foo) -Expected ([ref] $bar)
+    Get-Item .\README.md | Test-Object { $_.Length -ge 1000; $_.LastWriteTime -gt "2022/01/01" }
 
-    $fooと$barの要素数、および各要素の値が等しい場合は、$rueが返却されます。
+    README.mdのファイルサイズが1,000byte以上、かつ最終更新日が2022/01/01より後の場合は、$trueを返却します。
 #>
-function Test-Array {
+function Test-Object {
+    [CmdletBinding()]
     [OutputType([boolean])]
 
     Param(
-        [Parameter(Mandatory)] [object[]] [ref] $Actual,
-        [Parameter(Mandatory)] [object[]] [ref] $Expected
+        [Parameter(Mandatory)] [AllowNull()] [scriptblock] $Where,
+        [string] $Property,
+        [switch] $Or,
+        [Parameter(Mandatory, ValueFromPipeline)] [ValidateNotNull()] [object] $Object
     )
 
     Process {
-        if ($Actual.Count -ne $Expected.Count) {
+        if ($null -eq $Where) {
+            return $true
+        }
+
+        [object] $Target = ($Property -ne "") ? $Object.$Property : $Object
+
+        if ($null -eq $Target) {
             return $false
         }
 
-        for ($Index = 0; $Index -lt $Actual.Count; $Index++) {
-            if ($Actual[$Index] -ne $Expected[$Index]) {
-                return $false
-            }
+        [boolean[]] $Test = Write-Output $Target | ForEach-Object $Where
+
+        if ($Test.Length -eq 0) {
+            return $false
         }
 
-        return $true
+        if ($Or) {
+            return $Test -contains $true
+        } else {
+            return -not ($Test -contains $false)
+        }
     }
 }

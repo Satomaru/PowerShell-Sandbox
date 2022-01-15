@@ -6,11 +6,11 @@
     PowerShellVersion = '7.2'
 
     RequiredModules = @(
+        'Satomaru.Definition',
         'Satomaru.Util'
     )
 
     FunctionsToExport = @(
-        'Find-TextItem',
         'Get-TextContent'
     )
 }

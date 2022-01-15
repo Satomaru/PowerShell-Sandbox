@@ -61,7 +61,8 @@ using module Satomaru.Definition
         Exts:                  このコンテンツに妥当である拡張子。
 #>
 function Get-ContentSpec {
-    [OutputType([hashtable])]
+    [CmdletBinding()]
+    [OutputType([object])]
 
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [WebResponseObject] $Response
@@ -82,7 +83,7 @@ function Get-ContentSpec {
 
         [hashtable] $Item = $Script:ContentSpecs[$Key]
 
-        return @{
+        return [PSCustomObject] @{
             RequestUri = $Response.BaseResponse.RequestMessage.RequestUri
             ContentLocationHeader = Get-FirstItem $Response.Headers["Content-Location"]
             ContentTypeHeader = $ContentTypeHeader
@@ -121,6 +122,7 @@ function Get-ContentSpec {
     Webレスポンスから解決したファイル名。
 #>
 function Resolve-LocalName {
+    [CmdletBinding()]
     [OutputType([string])]
 
     Param(
@@ -129,7 +131,7 @@ function Resolve-LocalName {
     )
 
     Process {
-        [hashtable] $ContentSpec = $Response | Get-ContentSpec
+        [object] $ContentSpec = $Response | Get-ContentSpec
         [string] $LocalPath = Optimize-Void $ContentSpec.ContentLocationHeader | Split-Path -Leaf
         $LocalPath ??= $ContentSpec.RequestUri.LocalPath
 
@@ -176,6 +178,7 @@ function Resolve-LocalName {
     Webレスポンスから解決したエンコーディング。
 #>
 function Resolve-Encoding {
+    [CmdletBinding()]
     [OutputType([System.Text.Encoding])]
 
     Param(
@@ -183,7 +186,7 @@ function Resolve-Encoding {
     )
 
     Process {
-        [hashtable] $ContentSpec = $Response | Get-ContentSpec
+        [object] $ContentSpec = $Response | Get-ContentSpec
 
         [System.Text.Encoding] $Encoding = if ($ContentSpec.Charset) {
             [System.Text.Encoding]::GetEncoding($ContentSpec.Charset)
@@ -214,6 +217,7 @@ function Resolve-Encoding {
     HTMLの内容から判断されたエンコーディング。
 #>
 function Search-HtmlEncoding {
+    [CmdletBinding()]
     [OutputType([System.Text.Encoding])]
 
     Param(
@@ -254,6 +258,7 @@ function Search-HtmlEncoding {
     CSSの内容から判断されたエンコーディング。
 #>
 function Search-CssEncoding {
+    [CmdletBinding()]
     [OutputType([System.Text.Encoding])]
 
     Param(
@@ -321,7 +326,7 @@ function Search-CssEncoding {
 #>
 function Save-WebResponse {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact="Low")]
-    [OutputType([hashtable])]
+    [OutputType([object])]
 
     Param(
         [Parameter(Mandatory, ValueFromPipeline)] [WebResponseObject] $Response,
@@ -336,9 +341,9 @@ function Save-WebResponse {
     }
 
     Process {
-        [hashtable] $ContentSpec = $Response | Get-ContentSpec
+        [object] $ContentSpec = $Response | Get-ContentSpec
 
-        [hashtable] $Info = @{
+        [object] $Info = [PSCustomObject] @{
             RequestUri = $ContentSpec.RequestUri
             ContentType = $ContentSpec.ContentTypeHeader
             FileName = ""

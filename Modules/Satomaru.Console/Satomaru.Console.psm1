@@ -3,173 +3,6 @@ using namespace System.Windows.Forms
 
 <#
     .SYNOPSIS
-    メッセージボックスを表示します。
-
-    .DESCRIPTION
-    System.Windows.Forms.MessageBoxを表示して、クリックされたボタンを返却します。
-    メッセージは配列で指定し、各要素の終わりで改行して表示します。
-    
-    .PARAMETER Message
-    メッセージボックスに表示するメッセージ。
-    配列の各要素の終わりで改行して表示します。
-
-    .PARAMETER Title
-    メッセージボックスのタイトル。
-
-    .PARAMETER Buttons
-    メッセージボックスのボタン。
-
-    .PARAMETER Icon
-    メッセージボックスのアイコン。
-
-    .INPUTS
-    なし。
-
-    .OUTPUTS
-    [System.Windows.Forms.DialogResult] クリックされたボタン。
-
-    .EXAMPLE
-    Show-MessageBox -Message "以下のファイルを更新します。",".\work\foo.txt" -Title "確認" -Buttons OKCancel -Icon Question
-
-    「？」アイコン、OKボタン、Cancelボタンのメッセージボックスを表示します。
-#>
-function Show-MessageBox {
-    [OutputType([System.Windows.Forms.DialogResult])]
-
-    Param(
-        [String[]] $Message = "",
-        [String] $Title = "",
-        [MessageBoxButtons] $Buttons = [MessageBoxButtons]::OK,
-        [MessageBoxIcon] $Icon = [MessageBoxIcon]::None
-    )
-
-    Process {
-        return [MessageBox]::Show(($Message | Out-String), $Title, $Buttons, $Icon)
-    }
-}
-
-<#
-    .SYNOPSIS
-    配列の要素番号を選択します。
-
-    .DESCRIPTION
-    コンソールに配列を表示した後、配列の要素番号を待ち受けます。
-    正しい要素番号が入力された時は、その要素番号を返却します。
-
-    .PARAMETER Array
-    配列。
-
-    .PARAMETER Oneline
-    配列を1行で表示します。
-
-    .PARAMETER AbortWhenNot
-    存在しない要素番号が入力された場合は中断します。
-    
-    .INPUTS
-    なし。
-
-    .OUTPUTS
-    [int] 選択された要素番号。
-
-    .EXAMPLE
-    Select-Array @('foo', 'bar', 'baz')
-
-    配列の要素番号(0..2)を待ち受けます。
-#>
-function Select-Array {
-    [OutputType([int])]
-
-    Param(
-        [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [object[]] $Array,
-        [switch] $Oneline,
-        [switch] $AbortWhenNot
-    )
-
-    Process {
-        do {
-            [string] $Choose = if ($Oneline) {
-                [string[]] $Entries = for ([int] $Index = 0; $Index -lt $Array.Length; $Index++) {
-                    "[{0}]{1}" -f $Index, $Array[$Index]
-                }
-
-                Read-Host -Prompt ($Entries -join ", ")
-            } else {
-                [object[]] $Entries = for ([int] $Index = 0; $Index -lt $Array.Length; $Index++) {
-                    [PSCustomObject] @{ Index = $Index; Value = $Array[$Index] }
-                }
-
-                $Entries | Format-Table -Property Index, Value | Out-Host
-                Read-Host -Prompt "Input Index"
-            }
-
-            if ($Choose -match "^\d+$") {
-                [int] $Index = $Choose
-
-                if ($Index -lt $Array.Length) {
-                    return $Index
-                }
-            }
-        } while (-not $AbortWhenNot)
-    }
-}
-
-<#
-    .SYNOPSIS
-    ディクショナリのキーを選択します。
-
-    .DESCRIPTION
-    コンソールにディクショナリを表示した後、
-    ディクショナリのキーを待ち受けます。
-    正しいキーが入力された時は、そのキーを返却します。
-
-    .PARAMETER Dictionary
-    ディクショナリ。
-
-    .PARAMETER Oneline
-    ディクショナリを1行で表示します。
-
-    .PARAMETER AbortWhenNot
-    存在しないキーが入力された場合は中断します。
-
-    .INPUTS
-    なし。
-
-    .OUTPUTS
-    [string] 選択されたキー。
-
-    .EXAMPLE
-    Select-Dictionary ([ordered]@{R="再試行"; C="キャンセル"}) -Oneline
-    
-    "R"または"C"を待ち受けます。
-#>
-function Select-Dictionary {
-    [OutputType([string])]
-
-    Param(
-        [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [System.Collections.Specialized.OrderedDictionary] $Dictionary,
-        [switch] $Oneline,
-        [switch] $AbortWhenNot
-    )
-
-    Process {
-        do {
-            [string] $Choose = if ($Oneline) {
-                [string[]] $Entries = $Dictionary.GetEnumerator() | ForEach-Object { "[{0}]{1}" -f $_.Key, $_.Value }
-                Read-Host -Prompt ($Entries -join ", ")
-            } else {
-                $Dictionary | Out-Host
-                Read-Host -Prompt "Input Name"
-            }
-
-            if ($Dictionary.Contains($Choose)) {
-                return $Choose
-            }
-        } while (-not $AbortWhenNot)
-    }
-}
-
-<#
-    .SYNOPSIS
     例外を表示して、再試行またはキャンセルを待ち受けます。
 
     .DESCRIPTION
@@ -236,5 +69,175 @@ function Confirm-Exception {
 
         Write-Error -Exception $Exception -ErrorAction $ErrorActionPreference
         return $false
+    }
+}
+
+<#
+    .SYNOPSIS
+    配列の要素番号を選択します。
+
+    .DESCRIPTION
+    コンソールに配列を表示した後、配列の要素番号を待ち受けます。
+    正しい要素番号が入力された時は、その要素番号を返却します。
+
+    .PARAMETER Array
+    配列。
+
+    .PARAMETER Oneline
+    配列を1行で表示します。
+
+    .PARAMETER AbortWhenNot
+    存在しない要素番号が入力された場合は中断します。
+    
+    .INPUTS
+    なし。
+
+    .OUTPUTS
+    [int] 選択された要素番号。
+
+    .EXAMPLE
+    Select-Array @('foo', 'bar', 'baz')
+
+    配列の要素番号(0..2)を待ち受けます。
+#>
+function Select-Array {
+    [CmdletBinding()]
+    [OutputType([int])]
+
+    Param(
+        [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [object[]] $Array,
+        [switch] $Oneline,
+        [switch] $AbortWhenNot
+    )
+
+    Process {
+        do {
+            [string] $Choose = if ($Oneline) {
+                [string[]] $Entries = for ([int] $Index = 0; $Index -lt $Array.Length; $Index++) {
+                    "[{0}]{1}" -f $Index, $Array[$Index]
+                }
+
+                Read-Host -Prompt ($Entries -join ", ")
+            } else {
+                [object[]] $Entries = for ([int] $Index = 0; $Index -lt $Array.Length; $Index++) {
+                    [PSCustomObject] @{ Index = $Index; Value = $Array[$Index] }
+                }
+
+                $Entries | Format-Table -Property Index, Value | Out-Host
+                Read-Host -Prompt "Input Index"
+            }
+
+            if ($Choose -match "^\d+$") {
+                [int] $Index = $Choose
+
+                if ($Index -lt $Array.Length) {
+                    return $Index
+                }
+            }
+        } while (-not $AbortWhenNot)
+    }
+}
+
+<#
+    .SYNOPSIS
+    ディクショナリのキーを選択します。
+
+    .DESCRIPTION
+    コンソールにディクショナリを表示した後、
+    ディクショナリのキーを待ち受けます。
+    正しいキーが入力された時は、そのキーを返却します。
+
+    .PARAMETER Dictionary
+    ディクショナリ。
+
+    .PARAMETER Oneline
+    ディクショナリを1行で表示します。
+
+    .PARAMETER AbortWhenNot
+    存在しないキーが入力された場合は中断します。
+
+    .INPUTS
+    なし。
+
+    .OUTPUTS
+    [string] 選択されたキー。
+
+    .EXAMPLE
+    Select-Dictionary ([ordered]@{R="再試行"; C="キャンセル"}) -Oneline
+    
+    "R"または"C"を待ち受けます。
+#>
+function Select-Dictionary {
+    [CmdletBinding()]
+    [OutputType([string])]
+
+    Param(
+        [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [System.Collections.Specialized.OrderedDictionary] $Dictionary,
+        [switch] $Oneline,
+        [switch] $AbortWhenNot
+    )
+
+    Process {
+        do {
+            [string] $Choose = if ($Oneline) {
+                [string[]] $Entries = $Dictionary.GetEnumerator() | ForEach-Object { "[{0}]{1}" -f $_.Key, $_.Value }
+                Read-Host -Prompt ($Entries -join ", ")
+            } else {
+                $Dictionary | Out-Host
+                Read-Host -Prompt "Input Name"
+            }
+
+            if ($Dictionary.Contains($Choose)) {
+                return $Choose
+            }
+        } while (-not $AbortWhenNot)
+    }
+}
+
+<#
+    .SYNOPSIS
+    メッセージボックスを表示します。
+
+    .DESCRIPTION
+    System.Windows.Forms.MessageBoxを表示して、クリックされたボタンを返却します。
+    メッセージは配列で指定し、各要素の終わりで改行して表示します。
+    
+    .PARAMETER Message
+    メッセージボックスに表示するメッセージ。
+    配列の各要素の終わりで改行して表示します。
+
+    .PARAMETER Title
+    メッセージボックスのタイトル。
+
+    .PARAMETER Buttons
+    メッセージボックスのボタン。
+
+    .PARAMETER Icon
+    メッセージボックスのアイコン。
+
+    .INPUTS
+    なし。
+
+    .OUTPUTS
+    [System.Windows.Forms.DialogResult] クリックされたボタン。
+
+    .EXAMPLE
+    Show-MessageBox -Message "以下のファイルを更新します。",".\work\foo.txt" -Title "確認" -Buttons OKCancel -Icon Question
+
+    「？」アイコン、OKボタン、Cancelボタンのメッセージボックスを表示します。
+#>
+function Show-MessageBox {
+    [CmdletBinding()]
+    [OutputType([System.Windows.Forms.DialogResult])]
+
+    Param(
+        [String[]] $Message = "",
+        [String] $Title = "",
+        [MessageBoxButtons] $Buttons = [MessageBoxButtons]::OK,
+        [MessageBoxIcon] $Icon = [MessageBoxIcon]::None
+    )
+
+    Process {
+        return [MessageBox]::Show(($Message | Out-String), $Title, $Buttons, $Icon)
     }
 }

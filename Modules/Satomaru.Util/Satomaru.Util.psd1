@@ -12,6 +12,6 @@
         'Optimize-String',
         'Optimize-Void',
         'Split-Parameter',
-        'Test-Array'
+        'Test-Object'
     )
 }
