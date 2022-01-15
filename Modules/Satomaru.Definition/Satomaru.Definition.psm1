@@ -41,15 +41,15 @@ class ValidateFileName : ValidateEnumeratedArgumentsAttribute {
 
 # ValidateSetに、./Modules/*ディレクトリ名を設定します。
 class ValidateSetDevModules : IValidateSetValuesGenerator {
-    [String[]] GetValidValues() {
+    [string[]] GetValidValues() {
         return (Get-ChildItem Modules -Directory).Name
     }
 }
 
 # ValidateSetに、日本語文字セット名を設定します。
 class ValidateSetJaCharset : IValidateSetValuesGenerator {
-    [String[]] GetValidValues() {
-        [HashSet[string]] $WebNameSet = [HashSet[string]]::new()
+    [string[]] GetValidValues() {
+        [SortedSet[string]] $WebNameSet = [SortedSet[string]]::new()
         [void] $WebNameSet.Add([System.Text.Encoding]::Default.WebName)
 
         foreach ($Charset in "euc-jp", "iso-2022-jp", "shift_jis", "utf-8") {
@@ -58,6 +58,6 @@ class ValidateSetJaCharset : IValidateSetValuesGenerator {
             } catch {}
         }
 
-        return $WebNameSet | Sort-Object
+        return [string[]] $WebNameSet
     }
 }
